@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <script>
-  // Redirect to the momentum app preserving the hash (tokens etc)
-  var hash = window.location.hash;
-  window.location.replace('/momentum/' + hash);
+  // Redirect to momentum app preserving the full hash
+  var hash = window.location.hash || '';
+  var search = window.location.search || '';
+  window.location.replace('https://faisal7560.github.io/momentum' + search + hash);
 </script>
 </head>
 <body></body>
