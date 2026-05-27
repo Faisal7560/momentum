@@ -297,7 +297,20 @@
     <div class="field"><label>Email</label><input type="email" id="authEmail" placeholder="you@email.com"></div>
     <div class="field"><label>Password</label><input type="password" id="authPassword" placeholder="••••••••"></div>
     <button class="primary-btn" id="authBtn" onclick="handleAuth()">Log in</button>
+    <div style="text-align:center;margin-top:12px;">
+      <button id="forgotBtn" onclick="showReset()" style="background:none;border:none;color:var(--ash);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:0.05em;text-decoration:underline;">Forgot password?</button>
+    </div>
     <div class="err" id="authErr"></div>
+
+    <!-- reset form -->
+    <div id="resetForm" style="display:none;margin-top:8px;">
+      <div class="field"><label>Email</label><input type="email" id="resetEmail" placeholder="you@email.com"></div>
+      <button class="primary-btn" onclick="sendReset()">Send reset link</button>
+      <div style="text-align:center;margin-top:10px;">
+        <button onclick="hideReset()" style="background:none;border:none;color:var(--ash);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:0.05em;">Cancel</button>
+      </div>
+      <div class="err" id="resetErr"></div>
+    </div>
   </div>
 </div>
 
@@ -587,6 +600,9 @@ function switchTab(mode) {
   $('tabSignup').classList.toggle('active', mode === 'signup');
   $('authBtn').textContent = mode === 'login' ? 'Log in' : 'Sign up';
   $('authErr').textContent = '';
+  // show forgot password only on login tab
+  $('forgotBtn').style.display = mode === 'login' ? 'block' : 'none';
+  hideReset();
 }
 
 async function handleAuth() {
@@ -625,6 +641,35 @@ async function saveUsername() {
   profile = { id: currentUser.id, username, momentum:0, streak:0 };
   await loadGoals();
   showApp();
+}
+
+function showReset() {
+  $('resetForm').style.display = 'block';
+  $('forgotBtn').style.display = 'none';
+  $('authErr').textContent = '';
+  $('resetErr') && ($('resetErr').textContent = '');
+}
+
+function hideReset() {
+  $('resetForm').style.display = 'none';
+  $('forgotBtn').style.display = 'block';
+}
+
+async function sendReset() {
+  const email = $('resetEmail').value.trim();
+  if (!email) { $('resetErr').textContent = 'Enter your email'; return; }
+  const res = await fetch(`${SUPA_URL}/auth/v1/recover`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY },
+    body: JSON.stringify({ email })
+  });
+  if (res.ok) {
+    $('resetErr').style.color = 'var(--done)';
+    $('resetErr').textContent = 'Reset link sent — check your email';
+  } else {
+    $('resetErr').style.color = '#ff6b6b';
+    $('resetErr').textContent = 'Could not send reset link';
+  }
 }
 
 async function signOut() {
