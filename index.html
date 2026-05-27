@@ -168,6 +168,7 @@
     <div class="drain-line" id="drainLine"></div>
     <div class="streak-wrap"><div><div class="vm-num" id="massDisplay">0</div><div class="vm-tag">day streak</div></div></div>
     <div class="divider"></div>
+    <div id="todayDate" style="font-size:11px;color:var(--ash);letter-spacing:0.08em;margin-bottom:12px;"></div>
     <div class="today">Today's Push</div>
     <div class="sub">Complete each one. Every goal fuels your momentum.</div>
     <div id="goals"></div>
@@ -494,14 +495,34 @@ function render() {
   $('state').textContent = st.label;
   $('state').style.color = st.color;
   $('glow').style.opacity = st.glowOp;
+
+  // date
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dateEl = $('todayDate');
+  if (dateEl) dateEl.textContent = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+  // drain line — hide entirely when momentum is 0
   const dl = $('drainLine');
-  if (missStreak > 0) {
+  if (momentum <= 0) {
+    dl.classList.remove('visible');
+  } else if (missStreak > 0) {
     dl.textContent = `momentum draining — missing another day costs ${2*(missStreak+1)} pts`;
     dl.classList.add('visible');
   } else if (velocity===0 && momentum>0) {
     dl.textContent = 'complete a goal to protect your momentum';
     dl.classList.add('visible');
   } else { dl.classList.remove('visible'); }
+
+  // end day button — grey out if already ended today
+  const endedToday = localStorage.getItem('today_date') === dateStr();
+  const dayBtn = $('dayBtn');
+  if (dayBtn) {
+    dayBtn.disabled = endedToday;
+    dayBtn.textContent = endedToday ? 'Day ended ✓' : 'End the day →';
+    dayBtn.style.opacity = endedToday ? '0.4' : '1';
+  }
 }
 
 // ═══════════════════════════════════════
@@ -698,6 +719,13 @@ async function addGoal(name) {
 }
 
 async function endDay() {
+  // Block if already ended today
+  if (localStorage.getItem('today_date') === dateStr()) {
+    const btn=$('dayBtn'),orig=btn.textContent;
+    btn.textContent='Already ended today';
+    setTimeout(()=>{btn.textContent=orig;},2000);
+    return;
+  }
   const named=GOALS.filter(g=>g.name).length;
   if(named<3){
     const btn=$('dayBtn'),orig=btn.textContent;
