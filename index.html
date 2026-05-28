@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Volt</title>
+<meta name="application-name" content="Volt">
+<meta name="apple-mobile-web-app-title" content="Volt">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#07090f">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Volt%22%2C%22short_name%22%3A%22Volt%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2307090f%22%2C%22theme_color%22%3A%22%2307090f%22%7D">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -289,7 +295,23 @@
 <!-- AUTH -->
 <div class="screen" id="authScreen">
   <div style="margin-top:40px">
-    <div class="auth-title">Volt</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:6px;margin-top:8px">
+      <svg width="48" height="48" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="volt-grad-auth" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#1d4ed8"/>
+            <stop offset="55%" stop-color="#3b82f6"/>
+            <stop offset="100%" stop-color="#7dd3fc"/>
+          </linearGradient>
+        </defs>
+        <path d="M 4 32 C 9 31 16 29 22 23 C 26 19 28 13 30 5" stroke="url(#volt-grad-auth)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="5" r="6" fill="#07090f"/>
+        <circle cx="30" cy="5" r="4.5" fill="#1d4ed8" opacity="0.35"/>
+        <circle cx="30" cy="5" r="3" fill="#3b82f6"/>
+        <circle cx="30" cy="5" r="1.5" fill="#e8f4ff"/>
+      </svg>
+      <span class="auth-title" style="margin-bottom:0">Volt</span>
+    </div>
     <div class="auth-sub">Build it. Protect it. Don't lose it.</div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Log in</button>
@@ -352,6 +374,22 @@
 
   <!-- TODAY TAB -->
   <div id="tabMomentum">
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;margin-top:4px">
+      <svg width="22" height="22" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="volt-grad-hdr" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#1d4ed8"/>
+            <stop offset="100%" stop-color="#7dd3fc"/>
+          </linearGradient>
+        </defs>
+        <path d="M 4 32 C 9 31 16 29 22 23 C 26 19 28 13 30 5" stroke="url(#volt-grad-hdr)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="5" r="6" fill="#07090f"/>
+        <circle cx="30" cy="5" r="4.5" fill="#1d4ed8" opacity="0.35"/>
+        <circle cx="30" cy="5" r="3" fill="#3b82f6"/>
+        <circle cx="30" cy="5" r="1.5" fill="#e8f4ff"/>
+      </svg>
+      <span style="font-family:'Sora',sans-serif;font-weight:900;font-size:16px;color:#e8f4ff;letter-spacing:-0.01em">Volt</span>
+    </div>
     <div class="label">Your momentum</div>
     <div style="display:flex;justify-content:center;margin-bottom:4px"><div class="momentum" id="momentum">0</div></div>
     <div class="state" id="state"></div>
