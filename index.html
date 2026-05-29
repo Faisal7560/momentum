@@ -1755,7 +1755,7 @@ function _moveDrag(clientX, clientY) {
   }
 }
 
-async function _endDrag() {
+function _endDrag() {
   if (!dragState) return;
   document.removeEventListener('touchmove', _onTouchMove);
   document.removeEventListener('touchend',  _onTouchEnd);
@@ -1773,11 +1773,13 @@ async function _endDrag() {
   if (fromIndex !== currentIndex) {
     const moved = GOALS.splice(fromIndex, 1)[0];
     GOALS.splice(currentIndex, 0, moved);
-    await Promise.all(GOALS.map((g, pos) => {
+    buildGoals(); render(); // update UI instantly — don't wait for DB
+    Promise.all(GOALS.map((g, pos) => {
       if (g.db_id) return dbUpdate('goals', `id=eq.${g.db_id}`, { position: pos });
-    }));
+    })); // save in background
+  } else {
+    buildGoals(); render(); // still rebuild to clear drag styles cleanly
   }
-  buildGoals(); render();
 }
 async function toggleGoal(i, el) {
   const goal=GOALS[i];
