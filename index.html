@@ -27,8 +27,8 @@
   .screen.active{display:flex;}
   /* tabs viewport fills the screen, each tab scrolls independently */
   .tabs-viewport{width:100%;overflow:hidden;flex:1;}
-  .tabs-track{display:flex;width:300%;transition:transform 0.38s cubic-bezier(.4,0,.2,1);will-change:transform;align-items:flex-start;}
-  .tab-content{width:calc(100%/3);flex-shrink:0;min-width:0;min-height:100vh;padding:36px 22px 100px;overflow-y:auto;}
+  .tabs-track{display:flex;width:400%;transition:transform 0.38s cubic-bezier(.4,0,.2,1);will-change:transform;align-items:flex-start;}
+  .tab-content{width:calc(100%/4);flex-shrink:0;min-width:0;min-height:100vh;padding:36px 22px 100px;overflow-y:auto;}
   .glow{position:fixed;top:-160px;left:50%;transform:translateX(-50%);width:460px;height:460px;border-radius:50%;background:radial-gradient(circle,#3b82f6 0%,transparent 68%);opacity:0.12;filter:blur(40px);pointer-events:none;transition:opacity 1.1s ease,background 1.4s ease;}
   /* auth */
   .auth-title{font-family:'Sora',sans-serif;font-weight:900;font-size:52px;text-align:center;margin-bottom:6px;letter-spacing:-0.02em;}
@@ -107,10 +107,6 @@
   .note{font-size:9px;color:#7aa8d8;margin-top:12px;line-height:1.6;text-align:center;}
   /* drain countdown */
   .drain-countdown{text-align:center;font-size:10px;color:#3a6a9a;margin-bottom:6px;min-height:14px;letter-spacing:0.04em;}
-  /* sparkline chart */
-  .chart-wrap{margin-bottom:20px;}
-  .chart-label{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:#7aa8d8;margin-bottom:8px;}
-  .chart-svg{width:100%;height:64px;display:block;}
   /* ── Day Summary Modal ── */
   #daySummaryModal{
     position:fixed;inset:0;background:rgba(3,5,10,0.92);z-index:12000;
@@ -562,6 +558,7 @@
 <div class="screen" id="appScreen">
   <nav class="nav">
     <button class="nav-btn active" id="navMomentum" onclick="showTab('momentum')"><span class="nav-icon">⚡</span>Today</button>
+    <button class="nav-btn" id="navProgress" onclick="showTab('progress')"><span class="nav-icon">📈</span>Progress</button>
     <button class="nav-btn" id="navLeaderboard" onclick="showTab('leaderboard')"><span class="nav-icon">🏆</span>Clan</button>
     <button class="nav-btn" id="navProfile" onclick="showTab('profile')"><span class="nav-icon">◎</span>Profile</button>
   </nav>
@@ -597,11 +594,6 @@
       <div class="rb-text" id="returnBannerText">Welcome back. Your momentum is waiting.</div>
       <button class="rb-close" onclick="dismissReturnBanner()">×</button>
     </div>
-    <!-- 7-day sparkline -->
-    <div class="chart-wrap">
-      <div class="chart-label">7-day momentum</div>
-      <svg class="chart-svg" id="sparklineSvg" viewBox="0 0 340 64" preserveAspectRatio="none"></svg>
-    </div>
     <div id="todayDate" style="font-size:11px;color:var(--ash);letter-spacing:0.08em;margin-bottom:12px;"></div>
     <div class="today">Today's Push</div>
     <div class="sub">Complete each one. Every goal fuels your momentum.</div>
@@ -617,6 +609,52 @@
     <button class="day-btn" id="dayBtn">End the day →</button>
     <button class="undo-day-btn" id="undoDayBtn">↺ Undo end the day</button>
     <div class="note">Goals &amp; progress sync to your account.</div>
+  </div>
+
+  <!-- PROGRESS TAB -->
+  <div id="tabProgress" class="tab-content">
+    <div style="font-family:'Sora',sans-serif;font-weight:900;font-size:28px;margin-bottom:4px">Progress</div>
+    <div style="font-size:11px;color:var(--ash);margin-bottom:24px;letter-spacing:0.06em">Your momentum over time</div>
+
+    <!-- Period toggle -->
+    <div style="display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:20px;">
+      <button class="week-tab active" id="chartTab7" onclick="setChartPeriod(7)">7 days</button>
+      <button class="week-tab" id="chartTab30" onclick="setChartPeriod(30)">30 days</button>
+    </div>
+
+    <!-- Main chart -->
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 12px 10px;margin-bottom:16px;">
+      <svg id="mainChartSvg" style="width:100%;display:block;" viewBox="0 0 320 120" preserveAspectRatio="none"></svg>
+    </div>
+
+    <!-- Stats row -->
+    <div style="display:flex;gap:10px;margin-bottom:20px;">
+      <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:24px;color:var(--ember);" id="chartPeak">—</div>
+        <div style="font-size:9px;color:var(--ash);letter-spacing:0.15em;text-transform:uppercase;margin-top:4px;">Peak</div>
+      </div>
+      <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:24px;color:var(--ember);" id="chartAvg">—</div>
+        <div style="font-size:9px;color:var(--ash);letter-spacing:0.15em;text-transform:uppercase;margin-top:4px;">Average</div>
+      </div>
+      <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:24px;color:var(--done);" id="chartDaysActive">—</div>
+        <div style="font-size:9px;color:var(--ash);letter-spacing:0.15em;text-transform:uppercase;margin-top:4px;">Days active</div>
+      </div>
+    </div>
+
+    <!-- Volt Score card -->
+    <div class="volt-score-box" style="margin-bottom:16px;">
+      <div class="vs-label-wrap">
+        <div class="vs-label">Volt Score</div>
+        <div class="vs-sub">Lifetime total — never resets</div>
+      </div>
+      <div class="vs-val" id="progressVoltScore">0</div>
+    </div>
+
+    <!-- History list -->
+    <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#7aa8d8;margin-bottom:8px;">Recent days</div>
+    <div id="progressHistoryList"></div>
   </div>
 
   <!-- CLAN TAB -->
@@ -662,14 +700,6 @@
       <div id="profileSaveBar">
         <span>You have unsaved changes</span>
         <button id="profileSaveBtn" onclick="saveProfileChanges()">Save</button>
-      </div>
-      <!-- Volt Score — lifetime total, only goes up -->
-      <div class="volt-score-box">
-        <div class="vs-label-wrap">
-          <div class="vs-label">Volt Score</div>
-          <div class="vs-sub">Lifetime momentum earned — never resets</div>
-        </div>
-        <div class="vs-val" id="voltScoreDisplay">0</div>
       </div>
       <div class="stat-box">
         <div><div class="stat-val" id="profileMomentum">0</div><div class="stat-label">Momentum</div></div>
@@ -1198,8 +1228,7 @@ function render() {
     goalsWrap.classList.toggle('goals-locked-overlay', endedToday);
   }
 
-  // sparkline
-  renderSparkline();
+  // sparkline now lives on Progress tab, not Today tab
 }
 
 // ═══════════════════════════════════════
@@ -1240,12 +1269,35 @@ function saveMomentumHistory() {
   localStorage.setItem('momentum_history', JSON.stringify(history));
 }
 
-function renderSparkline() {
-  const svg = $('sparklineSvg');
+// ═══════════════════════════════════════
+//  PROGRESS TAB
+// ═══════════════════════════════════════
+let chartPeriod = 7;
+
+function setChartPeriod(days) {
+  chartPeriod = days;
+  $('chartTab7').classList.toggle('active', days === 7);
+  $('chartTab30').classList.toggle('active', days === 30);
+  renderMainChart();
+}
+
+function loadProgressTab() {
+  // Update volt score display
+  const vsEl = $('progressVoltScore');
+  if (vsEl) vsEl.textContent = Math.round(voltScore);
+  renderMainChart();
+}
+
+function renderMainChart() {
+  const svg = $('mainChartSvg');
+  const peakEl = $('chartPeak');
+  const avgEl = $('chartAvg');
+  const daysActiveEl = $('chartDaysActive');
+  const historyList = $('progressHistoryList');
   if (!svg) return;
+
   const history = getMomentumHistory();
-  // Build 7-day window (today + 6 days before)
-  const W = 7;
+  const W = chartPeriod;
   const entries = [];
   for (let i = W - 1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
@@ -1253,45 +1305,75 @@ function renderSparkline() {
     const found = history.find(e => e.d === ds);
     entries.push({ d: ds, m: found ? found.m : null });
   }
-  // Ensure today's current momentum is shown
+  // Always show today's current value
   entries[W - 1].m = Math.round(momentum);
 
   const vals = entries.map(e => e.m ?? 0);
+  const dataVals = entries.filter(e => e.m !== null).map(e => e.m);
   const maxVal = Math.max(...vals, 1);
-  const W_SVG = 340, H_SVG = 64, PAD = 8;
-  const xStep = (W_SVG - PAD * 2) / (W - 1);
+  const peak = dataVals.length ? Math.max(...dataVals) : 0;
+  const avg = dataVals.length ? Math.round(dataVals.reduce((a,b)=>a+b,0) / dataVals.length) : 0;
+  const daysActive = dataVals.filter(v => v > 0).length;
+
+  if (peakEl) peakEl.textContent = peak;
+  if (avgEl) avgEl.textContent = avg;
+  if (daysActiveEl) daysActiveEl.textContent = daysActive;
+
+  // Draw chart
+  const W_SVG = 320, H_SVG = 120, PAD_X = 8, PAD_TOP = 16, PAD_BOT = 20;
+  const xStep = (W_SVG - PAD_X * 2) / Math.max(W - 1, 1);
+  const chartH = H_SVG - PAD_TOP - PAD_BOT;
 
   svg.innerHTML = '';
 
-  // Grid lines
-  [0.25, 0.5, 0.75, 1].forEach(pct => {
-    const y = H_SVG - PAD - (H_SVG - PAD * 2) * pct;
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1', PAD); line.setAttribute('x2', W_SVG - PAD);
-    line.setAttribute('y1', y); line.setAttribute('y2', y);
-    line.setAttribute('stroke', '#111827'); line.setAttribute('stroke-width', '1');
-    svg.appendChild(line);
+  // Horizontal grid lines
+  [0, 0.25, 0.5, 0.75, 1].forEach(pct => {
+    const y = PAD_TOP + chartH * (1 - pct);
+    const gridLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+    gridLine.setAttribute('x1', PAD_X); gridLine.setAttribute('x2', W_SVG - PAD_X);
+    gridLine.setAttribute('y1', y); gridLine.setAttribute('y2', y);
+    gridLine.setAttribute('stroke', '#111827'); gridLine.setAttribute('stroke-width', '1');
+    svg.appendChild(gridLine);
+    if (pct > 0 && pct < 1) {
+      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x', PAD_X); label.setAttribute('y', y - 2);
+      label.setAttribute('font-size', '7'); label.setAttribute('fill', '#1e3a5f');
+      label.setAttribute('font-family', 'Space Grotesk, sans-serif');
+      label.textContent = Math.round(maxVal * pct);
+      svg.appendChild(label);
+    }
   });
 
-  // Build points only for non-null entries
   const points = entries.map((e, i) => ({
-    x: PAD + i * xStep,
-    y: H_SVG - PAD - ((e.m ?? 0) / maxVal) * (H_SVG - PAD * 2),
-    hasData: e.m !== null,
-    m: e.m
+    x: PAD_X + i * xStep,
+    y: PAD_TOP + chartH * (1 - ((e.m ?? 0) / maxVal)),
+    m: e.m,
+    d: e.d
   }));
 
-  // Area fill
-  const areaPoints = points.map(p => `${p.x},${p.y}`).join(' ');
-  const area = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-  area.setAttribute('points', `${PAD},${H_SVG - PAD} ${areaPoints} ${W_SVG - PAD},${H_SVG - PAD}`);
-  area.setAttribute('fill', 'rgba(59,130,246,0.08)');
-  area.setAttribute('stroke', 'none');
+  // Area gradient fill
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  const grad = document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
+  grad.setAttribute('id','chartGrad');grad.setAttribute('x1','0');grad.setAttribute('y1','0');
+  grad.setAttribute('x2','0');grad.setAttribute('y2','1');
+  const s1 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+  s1.setAttribute('offset','0%');s1.setAttribute('stop-color','#3b82f6');s1.setAttribute('stop-opacity','0.3');
+  const s2 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+  s2.setAttribute('offset','100%');s2.setAttribute('stop-color','#3b82f6');s2.setAttribute('stop-opacity','0.02');
+  grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);svg.appendChild(defs);
+
+  const areaPath = `M ${points[0].x},${PAD_TOP + chartH} ` +
+    points.map(p=>`L ${p.x},${p.y}`).join(' ') +
+    ` L ${points[points.length-1].x},${PAD_TOP + chartH} Z`;
+  const area = document.createElementNS('http://www.w3.org/2000/svg','path');
+  area.setAttribute('d', areaPath);
+  area.setAttribute('fill', 'url(#chartGrad)');
   svg.appendChild(area);
 
   // Line
-  const line = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-  line.setAttribute('points', areaPoints);
+  const linePath = points.map((p,i)=>(i===0?`M ${p.x},${p.y}`:`L ${p.x},${p.y}`)).join(' ');
+  const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+  line.setAttribute('d', linePath);
   line.setAttribute('fill', 'none');
   line.setAttribute('stroke', '#3b82f6');
   line.setAttribute('stroke-width', '2');
@@ -1299,35 +1381,61 @@ function renderSparkline() {
   line.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(line);
 
-  // Day labels + dots
+  // Dots + day labels — only show labels at reasonable intervals
+  const labelEvery = W <= 7 ? 1 : W <= 14 ? 2 : 5;
   const dayLetters = ['S','M','T','W','T','F','S'];
   points.forEach((p, i) => {
-    // dot
+    const isToday = i === W - 1;
     const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y); circle.setAttribute('r', i === W-1 ? 4 : 2.5);
-    circle.setAttribute('fill', i === W-1 ? '#60a5fa' : '#3b82f6');
+    circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y);
+    circle.setAttribute('r', isToday ? 4 : (p.m !== null ? 2.5 : 0));
+    circle.setAttribute('fill', isToday ? '#60a5fa' : '#3b82f6');
     svg.appendChild(circle);
-    // day label
-    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
-    const d = new Date(); d.setDate(d.getDate() - (W - 1 - i));
-    label.setAttribute('x', p.x); label.setAttribute('y', H_SVG - 1);
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('font-size', '8');
-    label.setAttribute('fill', i === W-1 ? '#60a5fa' : '#3a5a7a');
-    label.setAttribute('font-family', 'Space Grotesk, sans-serif');
-    label.textContent = dayLetters[d.getDay()];
-    svg.appendChild(label);
-    // value label on today's dot
-    if (i === W-1 && p.m !== null) {
-      const valLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
-      valLabel.setAttribute('x', p.x); valLabel.setAttribute('y', p.y - 7);
-      valLabel.setAttribute('text-anchor', 'middle');
-      valLabel.setAttribute('font-size', '8'); valLabel.setAttribute('fill', '#60a5fa');
-      valLabel.setAttribute('font-family', 'Sora, sans-serif'); valLabel.setAttribute('font-weight', '700');
-      valLabel.textContent = p.m;
-      svg.appendChild(valLabel);
+
+    if (i % labelEvery === 0 || isToday) {
+      const d = new Date(p.d + 'T12:00:00');
+      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x', p.x);
+      label.setAttribute('y', H_SVG - 4);
+      label.setAttribute('text-anchor','middle');
+      label.setAttribute('font-size','8');
+      label.setAttribute('fill', isToday ? '#60a5fa' : '#3a5a7a');
+      label.setAttribute('font-family','Space Grotesk, sans-serif');
+      label.textContent = W <= 7 ? dayLetters[d.getDay()] : (d.getDate() + '');
+      svg.appendChild(label);
     }
   });
+
+  // Today's value callout
+  const todayPt = points[W - 1];
+  const callout = document.createElementNS('http://www.w3.org/2000/svg','text');
+  callout.setAttribute('x', Math.min(todayPt.x, W_SVG - 24));
+  callout.setAttribute('y', todayPt.y - 8);
+  callout.setAttribute('text-anchor', todayPt.x > W_SVG - 40 ? 'end' : 'middle');
+  callout.setAttribute('font-size','9');callout.setAttribute('fill','#60a5fa');
+  callout.setAttribute('font-family','Sora, sans-serif');callout.setAttribute('font-weight','700');
+  callout.textContent = todayPt.m ?? '';
+  svg.appendChild(callout);
+
+  // History list — last 7 entries newest first
+  if (historyList) {
+    const recent = [...history].reverse().slice(0, 10);
+    historyList.innerHTML = '';
+    if (recent.length === 0) {
+      historyList.innerHTML = '<div style="font-size:11px;color:#3a5a7a;text-align:center;padding:20px 0;">No history yet — complete your first goal to start tracking.</div>';
+    } else {
+      recent.forEach(e => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;';
+        const d = new Date(e.d + 'T12:00:00');
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const isToday = e.d === dateStr();
+        row.innerHTML = `<div style="font-size:12px;color:${isToday?'var(--ember-soft)':'var(--ash)'};">${isToday ? 'Today' : days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()]}</div><div style="font-family:'Sora',sans-serif;font-weight:700;font-size:16px;color:var(--ember);">${e.m}</div>`;
+        historyList.appendChild(row);
+      });
+    }
+  }
 }
 
 // ═══════════════════════════════════════
@@ -1858,7 +1966,8 @@ async function loadLeaderboard() {
     const isYou=p.id===currentUser.id;
     const row=document.createElement('div');
     row.className='lb-row'+(isYou?' lb-you':'');
-    row.style.flexDirection='column';row.style.alignItems='stretch';row.style.gap='0';
+    // Use flex-wrap so reaction bar sits below without breaking the row layout
+    row.style.cssText='flex-wrap:wrap;align-items:center;gap:14px;';
     const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
     const nudgeBtn = !isYou
       ? `<button data-nudge="${p.id}" onclick="sendNudge('${p.id}')" style="background:transparent;border:1px solid var(--line);color:#7aa8d8;font-family:'Space Grotesk',sans-serif;font-size:10px;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0;letter-spacing:0.05em;">Nudge</button>`
@@ -1869,15 +1978,12 @@ async function loadLeaderboard() {
       : `<div style="width:36px;height:36px;border-radius:50%;background:var(--surface-lit);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:700;font-size:14px;color:var(--ember);flex-shrink:0;">${(p.username||'?')[0].toUpperCase()}</div>`;
     const displayScore = lbMode === 'week' ? (p.weeklyM ?? 0) : Math.round(p.momentum*10)/10;
     const scoreLabel = lbMode === 'week' ? 'this week' : `${p.streak} day streak`;
-    row.innerHTML=`
-      <div style="display:flex;align-items:center;gap:14px;width:100%">
-        <div class="lb-rank ${rankClass}">${i+1}</div>
-        ${avatarHtml}
-        <div class="lb-username">${esc(p.username)}${isYou?' <span style="font-size:10px;color:var(--ash)">(you)</span>':''}</div>
-        <div class="lb-stats"><div class="lb-momentum">${displayScore}</div><div class="lb-streak">${scoreLabel}</div></div>
-        ${nudgeBtn}
-      </div>
-      <div class="reaction-bar" data-reaction-bar="${p.id}" style="padding-left:42px;margin-top:6px;"></div>`;
+    row.innerHTML=`<div class="lb-rank ${rankClass}">${i+1}</div>
+      ${avatarHtml}
+      <div class="lb-username">${esc(p.username)}${isYou?' <span style="font-size:10px;color:var(--ash)">(you)</span>':''}</div>
+      <div class="lb-stats"><div class="lb-momentum">${displayScore}</div><div class="lb-streak">${scoreLabel}</div></div>
+      ${nudgeBtn}
+      <div class="reaction-bar" data-reaction-bar="${p.id}" style="width:100%;padding-left:2px;margin-top:2px;border-top:1px solid var(--line);padding-top:8px;"></div>`;
     list.appendChild(row);
     // Render reactions
     const reactionBar = row.querySelector(`[data-reaction-bar="${p.id}"]`);
@@ -2172,8 +2278,8 @@ function loadProfile() {
   $('profileEmail').textContent=currentUser?.email??'';
   $('profileMomentum').textContent=Math.round(momentum*10)/10;
   $('profileStreak').textContent=mass;
-  // Volt Score
-  const vsEl = $('voltScoreDisplay');
+  // Volt Score lives on Progress tab; update it if visible
+  const vsEl = $('progressVoltScore');
   if (vsEl) vsEl.textContent = Math.round(voltScore);
   // Show when they can next change username
   const lastChange = localStorage.getItem('username_changed');
@@ -2228,7 +2334,7 @@ async function submitChangeUsername() {
 // ═══════════════════════════════════════
 //  TAB NAV
 // ═══════════════════════════════════════
-const TAB_ORDER = ['Momentum','Leaderboard','Profile'];
+const TAB_ORDER = ['Momentum','Progress','Leaderboard','Profile'];
 let currentTabIndex = 0;
 
 function showTab(tab) {
@@ -2236,7 +2342,7 @@ function showTab(tab) {
   if (idx === -1) return;
 
   // Block leaving profile tab if there are unsaved changes
-  if (currentTabIndex === 2 && profileDirty && idx !== 2) {
+  if (currentTabIndex === 3 && profileDirty && idx !== 3) {
     const leave = confirm('You have unsaved profile changes. Leave without saving?');
     if (!leave) return;
     clearProfileDirty();
@@ -2245,7 +2351,7 @@ function showTab(tab) {
 
   currentTabIndex = idx;
   const track = $('tabsTrack');
-  track.style.transform = `translateX(${-idx * (100/3)}%)`;
+  track.style.transform = `translateX(${-idx * (100/4)}%)`;
 
   TAB_ORDER.forEach((t,i) => {
     $('nav'+t).classList.toggle('active', i === idx);
@@ -2253,6 +2359,7 @@ function showTab(tab) {
 
   if (tab.toLowerCase() === 'leaderboard') loadLeaderboard();
   if (tab.toLowerCase() === 'profile') loadProfile();
+  if (tab.toLowerCase() === 'progress') loadProgressTab();
 }
 
 // ═══════════════════════════════════════
@@ -2407,7 +2514,7 @@ function finishOnboarding() {
 //  SWIPE BETWEEN TABS
 // ═══════════════════════════════════════
 (function() {
-  const TABS = ['momentum', 'leaderboard', 'profile'];
+  const TABS = ['momentum', 'progress', 'leaderboard', 'profile'];
   let touchStartX = 0, touchStartY = 0, trackingSwipe = false;
 
   document.addEventListener('touchstart', e => {
