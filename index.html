@@ -111,18 +111,17 @@
   .goal.done{background:var(--surface-lit);border-color:var(--done);cursor:default;}
   .goal.empty-slot{border-style:dashed;opacity:0.7;}
   .goal.dragging{
-    position:fixed;z-index:1000;pointer-events:none;
-    opacity:0.92;box-shadow:0 12px 32px rgba(0,0,0,0.35);
+    position:relative;z-index:500;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+    opacity:0.95;
     transition:box-shadow 0.15s ease !important;
-    transform:scale(1.03) !important;
   }
   .drag-placeholder{
     border:2px dashed var(--ember);border-radius:14px;
     background:transparent;margin-bottom:10px;
-    transition:height 0.15s ease;
     pointer-events:none;
   }
-  .goal.drag-over{border-color:var(--ember);border-style:dashed;}
+  .goal.drag-over{border-color:var(--ember) !important;}
   .goal-num{font-family:'Sora',sans-serif;font-weight:700;font-size:13px;color:var(--ash);min-width:18px;text-align:center;flex-shrink:0;opacity:0.6;}
   .drag-handle{color:var(--ash);font-size:16px;cursor:grab;flex-shrink:0;padding:0 2px;opacity:0.4;touch-action:none;user-select:none;-webkit-user-select:none;}
   .drag-handle:active{cursor:grabbing;}
@@ -1696,96 +1695,64 @@ function startGoalDrag(clientX, clientY, fromIndex) {
   const draggingEl = rows.find(r => parseInt(r.dataset.index) === fromIndex);
   if (!draggingEl) return;
 
-  const rect = draggingEl.getBoundingClientRect();
-  const elW = rect.width;
-  const elH = rect.height;
+  // Snapshot every row's position BEFORE anything moves — stays constant during drag
+  const snapshots = rows.map(r => {
+    const rect = r.getBoundingClientRect();
+    return { el: r, index: parseInt(r.dataset.index), top: rect.top, height: rect.height };
+  });
+  const selfSnap = snapshots.find(s => s.index === fromIndex);
+  const grabOffsetY = clientY - selfSnap.top;
 
-  // Insert a same-height placeholder where the element was
-  const placeholder = document.createElement('div');
-  placeholder.className = 'drag-placeholder';
-  placeholder.style.height = elH + 'px';
-  wrap.insertBefore(placeholder, draggingEl);
-
-  // Make element fixed-position, sized the same, at its current location
   draggingEl.classList.add('dragging');
-  draggingEl.style.width  = elW + 'px';
-  draggingEl.style.left   = rect.left + 'px';
-  draggingEl.style.top    = rect.top  + 'px';
+  draggingEl.style.transition = 'none';
 
   dragState = {
     fromIndex,
     currentIndex: fromIndex,
-    el:          draggingEl,
-    placeholder,
+    el: draggingEl,
     rows,
-    wrap,
-    // how far from the top of the element the pointer grabbed
-    grabOffsetY: clientY - rect.top,
-    elH,
+    snapshots,
+    grabOffsetY,
+    selfSnapTop: selfSnap.top,
   };
 
-  // Move element to pointer immediately (no jump)
   _moveDrag(clientX, clientY);
 
-  document.addEventListener('touchmove',  _onTouchMove, { passive: false });
-  document.addEventListener('touchend',   _onTouchEnd,  { passive: true  });
-  document.addEventListener('mousemove',  _onMouseMove);
-  document.addEventListener('mouseup',    _onMouseUp);
+  document.addEventListener('touchmove', _onTouchMove, { passive: false });
+  document.addEventListener('touchend',  _onTouchEnd,  { passive: true });
+  document.addEventListener('mousemove', _onMouseMove);
+  document.addEventListener('mouseup',   _onMouseUp);
 }
 
-function _getPointerY(e) {
-  return e.touches ? e.touches[0].clientY : e.clientY;
-}
-function _getPointerX(e) {
-  return e.touches ? e.touches[0].clientX : e.clientX;
-}
-
-function _onTouchMove(e) { e.preventDefault(); _moveDrag(_getPointerX(e), _getPointerY(e)); }
+function _onTouchMove(e) { e.preventDefault(); _moveDrag(e.touches[0].clientX, e.touches[0].clientY); }
 function _onMouseMove(e) { _moveDrag(e.clientX, e.clientY); }
-function _onTouchEnd(e)  { _endDrag(); }
-function _onMouseUp(e)   { _endDrag(); }
+function _onTouchEnd()   { _endDrag(); }
+function _onMouseUp()    { _endDrag(); }
 
 function _moveDrag(clientX, clientY) {
   if (!dragState) return;
-  const { el, placeholder, rows, grabOffsetY, elH } = dragState;
+  const { el, snapshots, fromIndex, grabOffsetY, selfSnapTop } = dragState;
 
-  // Position the floating element so it follows the pointer
-  el.style.top = (clientY - grabOffsetY) + 'px';
+  // Translate from original position so it follows the pointer exactly
+  const dy = clientY - selfSnapTop - grabOffsetY;
+  el.style.transform = `translateY(${dy}px)`;
 
-  // Work out which slot to insert the placeholder into
-  // Compare pointer Y to the midpoint of each non-dragging row
-  let newIndex = dragState.fromIndex;
+  // Find which row's midpoint the pointer is closest to (using snapshots — no layout read)
+  let newIndex = fromIndex;
   let bestDist = Infinity;
-
-  rows.forEach(row => {
-    if (row === el) return;
-    const r = row.getBoundingClientRect();
-    const mid = r.top + r.height / 2;
+  snapshots.forEach(s => {
+    if (s.index === fromIndex) return;
+    const mid = s.top + s.height / 2;
     const dist = Math.abs(clientY - mid);
-    if (dist < bestDist) {
-      bestDist = dist;
-      newIndex = parseInt(row.dataset.index);
-    }
+    if (dist < bestDist) { bestDist = dist; newIndex = s.index; }
   });
 
-  // Move placeholder to the new position if it changed
   if (newIndex !== dragState.currentIndex) {
     dragState.currentIndex = newIndex;
-    const targetRow = rows.find(r => parseInt(r.dataset.index) === newIndex);
-    if (targetRow) {
-      // Insert placeholder before or after based on direction
-      const targetRect = targetRow.getBoundingClientRect();
-      if (clientY < targetRect.top + targetRect.height / 2) {
-        wrap.insertBefore(placeholder, targetRow);
-      } else {
-        wrap.insertBefore(placeholder, targetRow.nextSibling);
-      }
-    }
+    dragState.rows.forEach(r => r.classList.remove('drag-over'));
+    const target = dragState.rows.find(r => parseInt(r.dataset.index) === newIndex);
+    if (target) target.classList.add('drag-over');
   }
-
-  rows.forEach(r => r.classList.remove('drag-over'));
-  const targetRow = rows.find(r => parseInt(r.dataset.index) === newIndex);
-  if (targetRow && targetRow !== el) targetRow.classList.add('drag-over');
 }
 
 async function _endDrag() {
@@ -1795,14 +1762,13 @@ async function _endDrag() {
   document.removeEventListener('mousemove', _onMouseMove);
   document.removeEventListener('mouseup',   _onMouseUp);
 
-  const { el, placeholder, rows, fromIndex, currentIndex } = dragState;
+  const { el, rows, fromIndex, currentIndex } = dragState;
   dragState = null;
 
-  // Clean up element styles
   el.classList.remove('dragging');
-  el.style.width = ''; el.style.left = ''; el.style.top = '';
+  el.style.transform = '';
+  el.style.transition = '';
   rows.forEach(r => r.classList.remove('drag-over'));
-  placeholder.remove();
 
   if (fromIndex !== currentIndex) {
     const moved = GOALS.splice(fromIndex, 1)[0];
