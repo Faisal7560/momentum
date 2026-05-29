@@ -92,7 +92,7 @@
   .note{font-size:9px;color:#7aa8d8;margin-top:12px;line-height:1.6;text-align:center;}
   /* float */
   .float{position:fixed;font-family:'Sora',sans-serif;font-weight:900;pointer-events:none;z-index:999;transition:left 0.7s cubic-bezier(.5,0,.2,1),top 0.7s cubic-bezier(.5,0,.2,1),opacity 0.7s ease,transform 0.7s ease;}
-  .float-gain{font-size:32px;color:var(--ember);text-shadow:0 0 18px rgba(255,122,24,0.8);}
+  .float-gain{font-size:32px;color:var(--ember);text-shadow:0 0 18px rgba(59,130,246,0.8);}
   .float-drain{font-size:24px;color:var(--warn);}
   /* leaderboard */
   .lb-title{font-family:'Sora',sans-serif;font-weight:900;font-size:28px;margin-bottom:4px;}
@@ -122,6 +122,28 @@
   .stat-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:20px;display:flex;justify-content:space-around;}
   .stat-val{font-family:'Sora',sans-serif;font-weight:700;font-size:32px;color:var(--ember);text-align:center;}
   .stat-label{font-size:9px;color:var(--ash);letter-spacing:0.15em;text-transform:uppercase;margin-top:4px;text-align:center;}
+  /* avatars */
+  .avatar {
+    width:40px;height:40px;border-radius:50%;object-fit:cover;
+    border:2px solid var(--line);flex-shrink:0;
+    background:var(--surface-lit);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Sora',sans-serif;font-weight:700;font-size:16px;
+    color:var(--ember);overflow:hidden;
+  }
+  .avatar img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
+  .avatar-lg {
+    width:80px;height:80px;font-size:32px;
+    border:2px solid var(--ember);margin:0 auto 16px;cursor:pointer;
+    position:relative;
+  }
+  .avatar-lg:hover::after {
+    content:'change';position:absolute;bottom:0;left:0;right:0;
+    background:rgba(0,0,0,0.6);font-size:9px;letter-spacing:0.1em;
+    text-transform:uppercase;color:var(--text);text-align:center;
+    padding:4px 0;border-radius:0 0 50% 50%;
+  }
+  .avatar-upload { display:none; }
   /* tab transitions */
   .tab-content { animation: tabFadeIn 0.22s ease; }
   @keyframes tabFadeIn {
@@ -444,7 +466,10 @@
   <!-- PROFILE TAB -->
   <div id="tabProfile" class="tab-content" style="display:none">
     <div style="margin-top:20px">
-      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div class="avatar avatar-lg" id="profileAvatar" onclick="triggerAvatarUpload()">?
+        <img id="profileAvatarImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;top:0;left:0;">
+      </div>
+      <input type="file" id="avatarUpload" class="avatar-upload" accept="image/*">
       <div class="profile-username" id="profileUsername">—</div>
       <div class="profile-email" id="profileEmail">—</div>
       <div class="stat-box">
@@ -676,7 +701,7 @@ function switchTab(mode) {
   $('authErr').textContent = '';
   // show forgot password only on login tab
   $('forgotBtn').style.display = mode === 'login' ? 'block' : 'none';
-  hideReset();
+  if (mode !== 'login') hideReset();
 }
 
 async function handleAuth() {
@@ -860,17 +885,20 @@ function applyOfflineDrain() {
   const stored = localStorage.getItem('today_date');
   if (!stored || stored === dateStr()) return;
   const days = Math.round((new Date(dateStr()) - new Date(stored)) / 86400000);
-  // Note: velocity is not persisted — we check goals done state from DB
-  // For offline drain, if goals were completed that day they'd have been saved
-  // We treat each missed day as a miss since we can't know if goals were done
+  if (days <= 0) return;
+  // Check if goals were completed on the stored day
+  const goalsCompletedThatDay = GOALS.some(g => g.done && g.name);
   for (let d = 0; d < days; d++) {
-    {
+    if (d === 0 && goalsCompletedThatDay) {
+      // Goals were done on last recorded day — count it as completed
+      mass++;
+      missStreak = 0;
+    } else {
       missStreak++;
       if (missStreak >= 2) {
         momentum = Math.max(0, momentum - calcDrain(missStreak));
         mass = 0;
       }
-      // missStreak === 1: recovery mode, no drain, streak frozen
     }
   }
   localStorage.setItem('today_date', dateStr());
@@ -883,7 +911,7 @@ function applyOfflineDrain() {
 function render() {
   const key = getStateKey();
   const st  = STATES[key];
-  $('momentum').textContent   = Math.round(momentum*10)/10;
+  $('momentum').textContent   = Math.round(momentum);
   $('massDisplay').textContent = missStreak === 1 ? mass + '⚠' : mass;
   $('state').textContent = st.label;
   $('state').style.color = st.color;
@@ -917,7 +945,7 @@ function render() {
   } else { dl.classList.remove('visible'); }
 
   // end day button — grey out if already ended today
-  const endedToday = localStorage.getItem('today_date') === dateStr();
+  const endedToday = localStorage.getItem('day_ended') === dateStr();
   const dayBtn = $('dayBtn');
   if (dayBtn) {
     dayBtn.disabled = endedToday;
@@ -987,9 +1015,7 @@ async function loadGoals() {
 }
 
 async function saveGoalsDone() {
-  for (const g of GOALS) {
-    if (g.db_id) await dbUpdate('goals',`id=eq.${g.db_id}`,{done:g.done,name:g.name});
-  }
+  await Promise.all(GOALS.filter(g=>g.db_id).map(g=>dbUpdate('goals',`id=eq.${g.db_id}`,{done:g.done,name:g.name})));
 }
 
 async function saveProfile() {
@@ -1121,11 +1147,8 @@ async function addGoal(name) {
 
 async function endDay() {
   // Block if already ended today
-  if (localStorage.getItem('today_date') === dateStr()) {
-    const btn=$('dayBtn'),orig=btn.textContent;
-    btn.textContent='Already ended today';
-    setTimeout(()=>{btn.textContent=orig;},2000);
-    return;
+  if (localStorage.getItem('day_ended') === dateStr()) {
+    return; // already ended today — render() shows 'Day ended ✓'
   }
   const named=GOALS.filter(g=>g.name).length;
   if(named<3){
@@ -1160,6 +1183,7 @@ async function endDay() {
   velocity = 0;
   GOALS.forEach(g => g.done = false);
   localStorage.setItem('today_date', dateStr());
+  localStorage.setItem('day_ended', dateStr());
   buildGoals(); render();
   await saveGoalsDone();
   await saveProfile();
@@ -1171,8 +1195,11 @@ async function endDay() {
 function genCode(){return Math.random().toString(36).substring(2,8).toUpperCase();}
 
 async function loadClan() {
-  const {data}=await dbSelect('clan_members',`user_id=eq.${currentUser.id}`,`clan_id,clans(id,name,invite_code)`);
-  currentClan = data&&data[0]&&data[0].clans ? data[0].clans : null;
+  const {data}=await dbSelect('clan_members',`user_id=eq.${currentUser.id}`,'clan_id');
+  if (!data || !data[0]) { currentClan = null; return; }
+  const clanId = data[0].clan_id;
+  const {data:clans}=await dbSelect('clans',`id=eq.${clanId}`);
+  currentClan = clans&&clans[0] ? clans[0] : null;
 }
 
 async function sendNudge(toUserId) {
@@ -1230,15 +1257,22 @@ async function loadLeaderboard() {
   }
 
   const list=$('leaderboardList');list.innerHTML='';
+  // Load all avatars in parallel first
+  const avatarUrls = await Promise.all(profiles.map(p => getAvatarUrl(p.id)));
   profiles.forEach((p,i)=>{
     const isYou=p.id===currentUser.id;
     const row=document.createElement('div');
     row.className='lb-row'+(isYou?' lb-you':'');
     const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
     const nudgeBtn = !isYou
-      ? `<button data-nudge="${p.id}" onclick="sendNudge('${p.id}')" style="background:transparent;border:1px solid var(--line);color:var(--ash);font-family:'Space Grotesk',sans-serif;font-size:10px;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0;letter-spacing:0.05em;">Nudge</button>`
+      ? `<button data-nudge="${p.id}" onclick="sendNudge('${p.id}')" style="background:transparent;border:1px solid var(--line);color:#7aa8d8;font-family:'Space Grotesk',sans-serif;font-size:10px;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0;letter-spacing:0.05em;">Nudge</button>`
       : '';
+    const avatarUrl = avatarUrls[i];
+    const avatarHtml = avatarUrl
+      ? `<img src="${avatarUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--line);flex-shrink:0;">`
+      : `<div style="width:36px;height:36px;border-radius:50%;background:var(--surface-lit);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:700;font-size:14px;color:var(--ember);flex-shrink:0;">${(p.username||'?')[0].toUpperCase()}</div>`;
     row.innerHTML=`<div class="lb-rank ${rankClass}">${i+1}</div>
+      ${avatarHtml}
       <div class="lb-username">${esc(p.username)}${isYou?' <span style="font-size:10px;color:var(--ash)">(you)</span>':''}</div>
       <div class="lb-stats"><div class="lb-momentum">${Math.round(p.momentum*10)/10}</div><div class="lb-streak">${p.streak} day streak</div></div>
       ${nudgeBtn}`;
@@ -1290,9 +1324,63 @@ function copyInviteCode() {
 // ═══════════════════════════════════════
 //  PROFILE
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+//  AVATARS
+// ═══════════════════════════════════════
+async function getAvatarUrl(userId) {
+  try {
+    const res = await fetch(`${SUPA_URL}/storage/v1/object/public/avatars/${userId}/avatar`, {
+      method: 'HEAD'
+    });
+    if (res.ok) return `${SUPA_URL}/storage/v1/object/public/avatars/${userId}/avatar?t=${Date.now()}`;
+    return null;
+  } catch(e) { return null; }
+}
+
+async function uploadAvatar(file) {
+  if (!file || !currentUser) return;
+  const arrayBuffer = await file.arrayBuffer();
+  const res = await fetch(`${SUPA_URL}/storage/v1/object/avatars/${currentUser.id}/avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + accessToken,
+      'apikey': SUPA_KEY,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: arrayBuffer
+  });
+  if (res.ok) {
+    await loadProfileAvatar();
+  } else {
+    const err = await res.json().catch(()=>({}));
+    alert('Upload failed: ' + (err.message || 'unknown error'));
+  }
+}
+
+async function loadProfileAvatar() {
+  const url = await getAvatarUrl(currentUser.id);
+  const img = $('profileAvatarImg');
+  const av = $('profileAvatar');
+  if (url && img) {
+    img.src = url;
+    img.style.display = 'block';
+    av.textContent = '';
+    av.appendChild(img);
+  } else if (av) {
+    $('profileAvatarImg').style.display = 'none';
+    av.textContent = (profile?.username || '?')[0].toUpperCase();
+  }
+}
+
+function triggerAvatarUpload() {
+  $('avatarUpload').click();
+}
+
 function loadProfile() {
   if(!profile)return;
   $('profileAvatar').textContent=(profile.username||'?')[0].toUpperCase();
+  loadProfileAvatar();
   $('profileUsername').textContent=profile.username;
   $('profileEmail').textContent=currentUser?.email??'';
   $('profileMomentum').textContent=Math.round(momentum*10)/10;
@@ -1375,6 +1463,11 @@ $('addCancel').addEventListener('click',closeAdd);
 $('addSave').addEventListener('click',()=>{addGoal($('addInput').value);closeAdd();});
 $('addInput').addEventListener('keydown',e=>{if(e.key==='Enter'){addGoal($('addInput').value);closeAdd();}});
 $('dayBtn').addEventListener('click',endDay);
+$('avatarUpload').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (file) await uploadAvatar(file);
+  e.target.value = ''; // reset so same file can be selected again
+});
 $('authPassword').addEventListener('keydown',e=>{if(e.key==='Enter')handleAuth();});
 
 async function checkNudgesOnLoad() {
