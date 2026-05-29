@@ -545,7 +545,7 @@
     </div>
     <div id="todayDate" style="font-size:11px;color:var(--ash);letter-spacing:0.08em;margin-bottom:12px;"></div>
     <div class="today">Today's Push</div>
-    <div class="sub">Complete each one. Every goal fuels your momentum.</div>
+    <div class="sub" id="goalsSub">Name your 3 goals. Check them off as you go.</div>
     <div id="goals"></div>
     <div class="add-form" id="addForm">
       <input class="add-input" id="addInput" type="text" placeholder="e.g. Revise 1 Maths topic" maxlength="60">
@@ -1070,19 +1070,6 @@ async function signOut() {
 }
 
 // ═══════════════════════════════════════
-//  DRAIN FORMULA
-// ═══════════════════════════════════════
-// missStreak 1 = recovery mode (no drain, streak frozen)
-// missStreak 2+ = draining. Sequence: 10, 20, 35, 55, 80, 110...
-// Gaps grow: +10, +15, +20, +25, +30... (each gap +5 more than last)
-function calcDrain(ms) {
-  if (ms <= 1) return 0;
-  let drain = 0, gap = 10, inc = 5;
-  for (let d = 2; d <= ms; d++) { drain += gap; gap += inc; inc += 5; }
-  return drain;
-}
-
-// ═══════════════════════════════════════
 //  OFFLINE DRAIN
 // ═══════════════════════════════════════
 function dateStr(d = new Date()) { return d.toISOString().slice(0,10); }
@@ -1160,7 +1147,11 @@ function render() {
   if (cdEl) {
     const last = parseInt(localStorage.getItem('last_periodic_drain') || '0');
     const endedToday2 = localStorage.getItem('day_ended') === dateStr();
-    if (last > 0 && !endedToday2) {
+    if (endedToday2) {
+      cdEl.textContent = 'Drain paused — day ended ✓';
+    } else if (momentum <= 0) {
+      cdEl.textContent = 'Start completing goals to build momentum';
+    } else if (last > 0) {
       const nextDrainAt = last + 3 * 60 * 60 * 1000;
       const msLeft = nextDrainAt - Date.now();
       if (msLeft > 0) {
@@ -1168,10 +1159,8 @@ function render() {
         const m = Math.floor((msLeft % 3600000) / 60000);
         cdEl.textContent = `−5 in ${h > 0 ? h + 'h ' : ''}${m}m — complete goals to earn it back`;
       } else {
-        cdEl.textContent = '−5 momentum draining now — complete a goal';
+        cdEl.textContent = '−5 momentum overdue — complete a goal now';
       }
-    } else if (endedToday2) {
-      cdEl.textContent = 'Drain paused — day ended ✓';
     } else {
       cdEl.textContent = '';
     }
@@ -1229,8 +1218,8 @@ function saveMomentumHistory() {
   const today = dateStr();
   // Update or insert today's entry
   const idx = history.findIndex(e => e.d === today);
-  if (idx >= 0) history[idx].m = Math.round(momentum);
-  else history.push({ d: today, m: Math.round(momentum) });
+  if (idx >= 0) history[idx].m = Math.round(momentum * 10) / 10;
+  else history.push({ d: today, m: Math.round(momentum * 10) / 10 });
   // Keep only last 30 days
   history = history.slice(-30);
   localStorage.setItem('momentum_history', JSON.stringify(history));
@@ -1381,12 +1370,12 @@ function renderMainChart() {
   callout.textContent = todayPt.m ?? '';
   svg.appendChild(callout);
 
-  // History list — last 7 entries newest first
+  // History list — last 10 entries newest first
   if (historyList) {
     const recent = [...history].reverse().slice(0, 10);
     historyList.innerHTML = '';
     if (recent.length === 0) {
-      historyList.innerHTML = '<div style="font-size:11px;color:#3a5a7a;text-align:center;padding:20px 0;">No history yet — complete your first goal to start tracking.</div>';
+      historyList.innerHTML = '<div style="text-align:center;color:#3a5a7a;font-size:12px;padding:32px 0;line-height:1.8;">No history yet.<br>Complete your first goal to start tracking.</div>';
     } else {
       recent.forEach(e => {
         const row = document.createElement('div');
@@ -1478,12 +1467,21 @@ async function loadGoals() {
       GOALS.push({name:'',done:false,locked:true,db_id:d&&d[0]?d[0].id:null,position:pos});
     }
   }
-  // Reset done if new day
+  // Reset done states if new day
   const stored = localStorage.getItem('today_date');
   if (stored !== dateStr()) {
-    GOALS.forEach(g=>g.done=false);
+    GOALS.forEach(g => g.done = false);
+    velocity = 0;
     await saveGoalsDone();
     localStorage.setItem('today_date', dateStr());
+    // Also clear day_ended if it was from a previous day
+    const dayEnded = localStorage.getItem('day_ended');
+    if (dayEnded && dayEnded !== dateStr()) {
+      localStorage.removeItem('day_ended');
+    }
+  } else {
+    // Restore velocity from done goals
+    velocity = GOALS.filter(g => g.done && g.name).length;
   }
 }
 
@@ -1493,9 +1491,8 @@ async function saveGoalsDone() {
 
 async function saveProfile() {
   if (!currentUser) return;
-  // volt_score is localStorage-only until the DB column is added
   localStorage.setItem('volt_score_local', (Math.round(voltScore * 10) / 10).toString());
-  await dbUpdate('profiles',`id=eq.${currentUser.id}`,{momentum,streak:mass,updated_at:new Date().toISOString()});
+  await dbUpdate('profiles', `id=eq.${currentUser.id}`, { momentum, streak: mass });
 }
 
 // ═══════════════════════════════════════
@@ -1506,6 +1503,15 @@ function esc(s){const d=document.createElement('div');d.textContent=s;return d.i
 function buildGoals() {
   const wrap = $('goals');
   wrap.innerHTML = '';
+  const named = GOALS.filter(g => g.name).length;
+  const done = GOALS.filter(g => g.done && g.name).length;
+  const sub = $('goalsSub');
+  if (sub) {
+    if (named === 0) sub.textContent = 'Name your 3 goals below. Check them off as you go.';
+    else if (done === named && named >= 3) sub.textContent = 'All done. Perfect day. ✓';
+    else if (done > 0) sub.textContent = `${done} of ${named} done — keep going.`;
+    else sub.textContent = 'Complete each one. Every goal builds momentum.';
+  }
   GOALS.forEach((goal, i) => {
     if (editingIndex === i) {
       const row = document.createElement('div');
@@ -1625,11 +1631,11 @@ async function deleteGoal(i) {
 }
 
 async function addGoal(name) {
-  const clean=name.trim();if(!clean)return;
-  const pos=GOALS.length;
-  const {data}=await dbInsert('goals',{user_id:currentUser.id,name:clean,done:false,locked:false,position:pos});
-  GOALS.push({name:clean,done:false,locked:false,db_id:data&&data[0]?data[0].id:null,position:pos});
-  buildGoals();render();
+  const clean = name.trim(); if (!clean) return;
+  const pos = GOALS.length;
+  const { data } = await dbInsert('goals', { user_id: currentUser.id, name: clean, done: false, locked: false, position: pos });
+  GOALS.push({ name: clean, done: false, locked: false, db_id: data && data[0] ? data[0].id : null, position: pos });
+  buildGoals(); render();
 }
 
 // ═══════════════════════════════════════
@@ -1679,12 +1685,12 @@ async function endDay() {
   if (localStorage.getItem('day_ended') === dateStr()) {
     return; // already ended today — render() shows 'Day ended ✓'
   }
-  const named=GOALS.filter(g=>g.name).length;
-  if(named<3){
-    const btn=$('dayBtn'),orig=btn.textContent;
-    btn.textContent='Name your 3 goals first';
-    btn.style.borderColor='var(--ember)';btn.style.color='var(--ember)';
-    setTimeout(()=>{btn.textContent=orig;btn.style.borderColor='';btn.style.color='';},2500);
+  const named = GOALS.filter(g => g.name).length;
+  if (named < 3) {
+    const btn = $('dayBtn'), orig = btn.textContent;
+    btn.textContent = 'Set your 3 goals first';
+    btn.style.borderColor = 'var(--ember)'; btn.style.color = 'var(--ember)';
+    setTimeout(() => { btn.textContent = orig; btn.style.borderColor = ''; btn.style.color = ''; }, 2500);
     return;
   }
   const did = GOALS.filter(g=>g.done && g.name).length > 0;
