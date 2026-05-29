@@ -1407,7 +1407,7 @@ async function getAvatarUrl(userId) {
 
 // ── crop/reposition state ──
 let cropState = { img: null, scale: 1, baseScale: 1, x: 0, y: 0, natW: 0, natH: 0, dragging: false, startX: 0, startY: 0, startPosX: 0, startPosY: 0 };
-let pendingAvatarBlob = null; // holds the cropped image until Save is pressed
+let pendingAvatarDataURL = null; // holds the cropped image until Save is pressed
 let profileDirty = false;     // true when there are unsaved changes
 const STAGE = 260;            // crop stage size in px
 
@@ -1416,24 +1416,25 @@ function triggerAvatarUpload() {
 }
 
 // When a file is chosen, open the crop modal
+let cropRawDataURL = ''; // store raw file dataURL for canvas use
+
 function openCropModal(file) {
   const reader = new FileReader();
   reader.onload = e => {
+    cropRawDataURL = e.target.result; // store for confirmCrop
     const img = $('cropImg');
     img.onload = () => {
       cropState.natW = img.naturalWidth;
       cropState.natH = img.naturalHeight;
-      // base scale = cover the stage (fill the circle)
       cropState.baseScale = Math.max(STAGE / cropState.natW, STAGE / cropState.natH);
       cropState.scale = cropState.baseScale;
-      // center the image
       cropState.x = (STAGE - cropState.natW * cropState.scale) / 2;
       cropState.y = (STAGE - cropState.natH * cropState.scale) / 2;
       $('cropZoom').value = 100;
       applyCropTransform();
       $('avatarModal').classList.add('open');
     };
-    img.src = e.target.result;
+    img.src = cropRawDataURL;
   };
   reader.readAsDataURL(file);
 }
@@ -1497,64 +1498,68 @@ function cancelCrop() {
 
 // Render the cropped circle to a canvas and store the blob (don't upload yet)
 function confirmCrop() {
-  try {
-    const out = 400;
-    const canvas = document.createElement('canvas');
-    canvas.width = out; canvas.height = out;
-    const ctx = canvas.getContext('2d');
+  // Use a fresh Image to avoid any taint issues with the DOM img element
+  const sourceImg = new Image();
+  sourceImg.onload = function() {
+    try {
+      const out = 400;
+      const canvas = document.createElement('canvas');
+      canvas.width = out; canvas.height = out;
+      const ctx = canvas.getContext('2d');
+      // draw background to avoid transparency issues
+      ctx.fillStyle = '#07090f';
+      ctx.fillRect(0, 0, out, out);
+      // circular clip
+      ctx.beginPath();
+      ctx.arc(out/2, out/2, out/2, 0, Math.PI*2);
+      ctx.closePath();
+      ctx.clip();
+      // draw image with crop position
+      const k = out / STAGE;
+      ctx.drawImage(
+        sourceImg,
+        cropState.x * k,
+        cropState.y * k,
+        cropState.natW * cropState.scale * k,
+        cropState.natH * cropState.scale * k
+      );
+      // store dataURL directly — most reliable approach
+      pendingAvatarDataURL = canvas.toDataURL('image/jpeg', 0.92);
+      // show preview on profile avatar
+      showAvatarPreview(pendingAvatarDataURL);
+      markProfileDirty();
+      cancelCrop();
+    } catch(err) {
+      console.error('Canvas error:', err);
+      // fallback: just use the raw file dataURL as preview
+      pendingAvatarDataURL = cropRawDataURL;
+      showAvatarPreview(pendingAvatarDataURL);
+      markProfileDirty();
+      cancelCrop();
+    }
+  };
+  sourceImg.src = cropRawDataURL; // use stored raw dataURL
+}
 
-    // circular clip
-    ctx.beginPath();
-    ctx.arc(out/2, out/2, out/2, 0, Math.PI*2);
-    ctx.closePath();
-    ctx.clip();
-
-    // With transform-origin:0 0 and translate(x,y) scale(s):
-    // top-left of rendered image is at (cropState.x, cropState.y) in stage coords
-    const k = out / STAGE;
-    const img = $('cropImg');
-
-    ctx.drawImage(
-      img,
-      cropState.x * k,
-      cropState.y * k,
-      cropState.natW * cropState.scale * k,
-      cropState.natH * cropState.scale * k
-    );
-
-    // Use toDataURL as it's more reliable than toBlob across browsers
-    const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-
-    // Convert dataURL to blob manually
-    const byteString = atob(dataURL.split(',')[1]);
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-    const blob = new Blob([ab], { type: 'image/jpeg' });
-
-    pendingAvatarBlob = blob;
-
-    // Preview on profile avatar immediately
-    const pImg = $('profileAvatarImg');
-    pImg.src = dataURL;
-    pImg.style.display = 'block';
-    const av = $('profileAvatar');
-    // clear text content but keep img
-    while (av.firstChild) av.removeChild(av.firstChild);
-    av.appendChild(pImg);
-
-    markProfileDirty();
-    cancelCrop();
-  } catch(err) {
-    console.error('Crop error:', err);
-    alert('Could not process image. Try a different photo.');
-  }
+function showAvatarPreview(dataURL) {
+  const av = $('profileAvatar');
+  // remove any existing children
+  while (av.firstChild) av.removeChild(av.firstChild);
+  const img = document.createElement('img');
+  img.src = dataURL;
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;top:0;left:0;pointer-events:none;';
+  av.appendChild(img);
 }
 
 // Actually upload the pending blob to Supabase
-async function uploadAvatarBlob(blob) {
-  if (!blob || !currentUser) return false;
-  const arrayBuffer = await blob.arrayBuffer();
+async function uploadAvatarDataURL(dataURL) {
+  if (!dataURL || !currentUser) return false;
+  // convert dataURL to binary
+  const base64 = dataURL.split(',')[1];
+  const byteStr = atob(base64);
+  const ab = new ArrayBuffer(byteStr.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
   const res = await fetch(`${SUPA_URL}/storage/v1/object/avatars/${currentUser.id}/avatar`, {
     method: 'POST',
     headers: {
@@ -1563,22 +1568,23 @@ async function uploadAvatarBlob(blob) {
       'Content-Type': 'image/jpeg',
       'x-upsert': 'true'
     },
-    body: arrayBuffer
+    body: ab
   });
   return res.ok;
 }
 
 async function loadProfileAvatar() {
   const url = await getAvatarUrl(currentUser.id);
-  const img = $('profileAvatarImg');
   const av = $('profileAvatar');
-  if (url && img) {
+  if (!av) return;
+  // clear everything
+  while (av.firstChild) av.removeChild(av.firstChild);
+  if (url) {
+    const img = document.createElement('img');
     img.src = url;
-    img.style.display = 'block';
-    av.textContent = '';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;top:0;left:0;pointer-events:none;';
     av.appendChild(img);
-  } else if (av) {
-    $('profileAvatarImg').style.display = 'none';
+  } else {
     av.textContent = (profile?.username || '?')[0].toUpperCase();
   }
 }
@@ -1591,7 +1597,7 @@ function markProfileDirty() {
 
 function clearProfileDirty() {
   profileDirty = false;
-  pendingAvatarBlob = null;
+  pendingAvatarDataURL = null;
   $('profileSaveBar').classList.remove('show');
 }
 
@@ -1599,8 +1605,8 @@ async function saveProfileChanges() {
   const btn = $('profileSaveBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    if (pendingAvatarBlob) {
-      const ok = await uploadAvatarBlob(pendingAvatarBlob);
+    if (pendingAvatarDataURL) {
+      const ok = await uploadAvatarDataURL(pendingAvatarDataURL);
       if (!ok) { alert('Could not save photo. Try again.'); btn.disabled=false; btn.textContent='Save'; return; }
     }
     clearProfileDirty();
@@ -1615,8 +1621,7 @@ async function saveProfileChanges() {
 function loadProfile() {
   if(!profile)return;
   clearProfileDirty();
-  $('profileAvatar').textContent=(profile.username||'?')[0].toUpperCase();
-  loadProfileAvatar();
+  loadProfileAvatar(); // handles both image and initial fallback
   $('profileUsername').textContent=profile.username;
   $('profileEmail').textContent=currentUser?.email??'';
   $('profileMomentum').textContent=Math.round(momentum*10)/10;
