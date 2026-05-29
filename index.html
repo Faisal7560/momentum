@@ -864,7 +864,8 @@ async function boot() {
   profile   = data[0];
   momentum  = profile.momentum ?? 0;
   mass      = profile.streak   ?? 0;
-  voltScore = profile.volt_score ?? 0;
+  // volt_score is stored locally — not yet a DB column
+  voltScore = parseFloat(localStorage.getItem('volt_score_local') || '0');
 
   await loadGoals();
   await loadClan();
@@ -938,11 +939,12 @@ async function saveUsername() {
   const username = $('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   if (!username || username.length < 3) { $('setupErr').textContent = 'Min 3 chars — letters, numbers, _ . - only'; return; }
   $('setupErr').textContent = '';
-  const { error } = await dbInsert('profiles', { id: currentUser.id, username, momentum:10, streak:0, volt_score:10 });
+  const { error } = await dbInsert('profiles', { id: currentUser.id, username, momentum:10, streak:0 });
   if (error) { $('setupErr').textContent = error.message || 'Username taken'; return; }
-  profile = { id: currentUser.id, username, momentum:10, streak:0, volt_score:10 };
+  profile = { id: currentUser.id, username, momentum:10, streak:0 };
   momentum = 10;
   voltScore = 10;
+  localStorage.setItem('volt_score_local', voltScore.toString());
   await loadGoals();
   localStorage.setItem('ob_done', '0'); // mark as new user so onboarding shows
   showApp();
@@ -1491,7 +1493,9 @@ async function saveGoalsDone() {
 
 async function saveProfile() {
   if (!currentUser) return;
-  await dbUpdate('profiles',`id=eq.${currentUser.id}`,{momentum,streak:mass,volt_score:voltScore,updated_at:new Date().toISOString()});
+  // volt_score is localStorage-only until the DB column is added
+  localStorage.setItem('volt_score_local', (Math.round(voltScore * 10) / 10).toString());
+  await dbUpdate('profiles',`id=eq.${currentUser.id}`,{momentum,streak:mass,updated_at:new Date().toISOString()});
 }
 
 // ═══════════════════════════════════════
@@ -1874,7 +1878,7 @@ async function loadLeaderboard() {
   const {data:authProfiles} = await dbSelect(
     'profiles',
     `id=in.(${idsParam})`,
-    'id,username,momentum,streak,volt_score'
+    'id,username,momentum,streak'
   );
 
   if(authProfiles && authProfiles.length > 0){
@@ -1884,7 +1888,7 @@ async function loadLeaderboard() {
     const {data:anonProfiles} = await dbSelectAnon(
       'profiles',
       `id=in.(${idsParam})`,
-      'id,username,momentum,streak,volt_score'
+      'id,username,momentum,streak'
     );
     if(anonProfiles && anonProfiles.length > 0){
       profiles = anonProfiles;
@@ -1897,7 +1901,7 @@ async function loadLeaderboard() {
   if(missingIds.length > 0){
     const fallbacks = await Promise.all(
       missingIds.map(uid =>
-        dbSelectAnon('profiles',`id=eq.${uid}`,'id,username,momentum,streak,volt_score')
+        dbSelectAnon('profiles',`id=eq.${uid}`,'id,username,momentum,streak')
           .then(r => Array.isArray(r.data) ? r.data[0] : null)
           .catch(()=>null)
       )
@@ -1909,10 +1913,10 @@ async function loadLeaderboard() {
   profiles = profiles.filter(p=>p && p.id);
   const selfInList = profiles.some(p=>p.id===currentUser.id);
   if(!selfInList && profile){
-    profiles.push({id:currentUser.id, username:profile.username||'?', momentum, streak:mass, volt_score:voltScore});
+    profiles.push({id:currentUser.id, username:profile.username||'?', momentum, streak:mass});
   }
   profiles = profiles.map(p=>
-    p.id===currentUser.id ? {...p, momentum, streak:mass, volt_score:voltScore} : p
+    p.id===currentUser.id ? {...p, momentum, streak:mass} : p
   );
   profiles.sort((a,b)=>(b.momentum||0)-(a.momentum||0));
 
