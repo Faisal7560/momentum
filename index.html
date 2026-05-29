@@ -150,6 +150,10 @@
   .week-tab.active{background:var(--surface-lit);color:var(--text);}
   .week-reset{font-size:9px;color:#3a5a7a;letter-spacing:0.06em;}
   /* ── Clan Reactions removed ── */
+  /* ── Nudge button ── */
+  .nudge-btn{background:transparent;border:1px solid var(--line);color:#7aa8d8;font-family:'Space Grotesk',sans-serif;font-size:10px;padding:6px 12px;border-radius:8px;cursor:pointer;flex-shrink:0;letter-spacing:0.06em;transition:border-color 0.2s,color 0.2s;}
+  .nudge-btn:hover{border-color:var(--ember-soft);color:var(--ember-soft);}
+  .nudge-btn:disabled{opacity:0.45;cursor:default;}
   /* float */
   .float{position:fixed;font-family:'Sora',sans-serif;font-weight:900;pointer-events:none;z-index:999;transition:left 0.7s cubic-bezier(.5,0,.2,1),top 0.7s cubic-bezier(.5,0,.2,1),opacity 0.7s ease,transform 0.7s ease;}
   .float-gain{font-size:32px;color:var(--ember);text-shadow:0 0 18px rgba(59,130,246,0.8);}
@@ -749,6 +753,24 @@ async function dbSelect(table, filters = '', select = '*') {
   let url = `${SUPA_URL}/rest/v1/${table}?select=${select}`;
   if (filters) url += '&' + filters;
   return supaFetch(url.replace(SUPA_URL, ''), { method: 'GET', headers: { 'Prefer': 'return=representation' } });
+}
+
+// Fetches using only the anon key (no user JWT) — hits anon RLS policies
+// which are usually set to allow reading public profile data
+async function dbSelectAnon(table, filters = '', select = '*') {
+  let url = `${SUPA_URL}/rest/v1/${table}?select=${select}`;
+  if (filters) url += '&' + filters;
+  const res = await fetch(SUPA_URL + url.replace(SUPA_URL, ''), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPA_KEY,
+      'Prefer': 'return=representation'
+      // No Authorization header — uses anon role
+    }
+  });
+  const data = await res.json().catch(() => ([]));
+  return { data: Array.isArray(data) ? data : [], error: res.ok ? null : data };
 }
 
 async function dbInsert(table, body) {
@@ -1836,53 +1858,71 @@ async function loadLeaderboard() {
 
   list.innerHTML='<div style="text-align:center;color:#3a5a7a;font-size:12px;padding:20px 0;">Loading…</div>';
 
-  // Fetch member IDs
+  // Step 1: get member IDs
   const {data:members,error:membersErr}=await dbSelect('clan_members',`clan_id=eq.${currentClan.id}`,'user_id');
   if(membersErr||!members||!members.length){
-    list.innerHTML='<div class="empty-state" style="padding:16px 0;">Share the invite code to get your clan on the board.</div>';
+    list.innerHTML='<div style="text-align:center;color:#3a5a7a;font-size:12px;padding:20px 0;">Share your invite code to bring your clan on board.</div>';
     return;
   }
 
-  const userIds=members.map(m=>m.user_id);
+  const userIds = members.map(m=>m.user_id);
 
-  // Fetch each profile individually — avoids RLS issues with bulk in.() queries
-  // Each user can always read their own row; admins/service roles read all.
-  // Individual fetches work regardless of RLS policy.
-  const profileResults = await Promise.all(
-    userIds.map(uid =>
-      dbSelect('profiles', `id=eq.${uid}`, 'id,username,momentum,streak,volt_score')
-        .then(r => r.data?.[0] || null)
-        .catch(() => null)
-    )
+  // Step 2: fetch all profiles in one query — try authenticated first
+  const idsParam = userIds.join(',');
+  let profiles = [];
+
+  const {data:authProfiles} = await dbSelect(
+    'profiles',
+    `id=in.(${idsParam})`,
+    'id,username,momentum,streak,volt_score'
   );
 
-  // Build profile list — always inject current user from local state
-  let profiles = profileResults.filter(Boolean);
+  if(authProfiles && authProfiles.length > 0){
+    profiles = authProfiles;
+  } else {
+    // Auth query returned nothing (RLS blocks cross-user reads) — try anon role
+    const {data:anonProfiles} = await dbSelectAnon(
+      'profiles',
+      `id=in.(${idsParam})`,
+      'id,username,momentum,streak,volt_score'
+    );
+    if(anonProfiles && anonProfiles.length > 0){
+      profiles = anonProfiles;
+    }
+  }
+
+  // Step 3: if still missing members, fetch individually as last resort
+  const foundIds = new Set(profiles.map(p=>p.id));
+  const missingIds = userIds.filter(id=>!foundIds.has(id));
+  if(missingIds.length > 0){
+    const fallbacks = await Promise.all(
+      missingIds.map(uid =>
+        dbSelectAnon('profiles',`id=eq.${uid}`,'id,username,momentum,streak,volt_score')
+          .then(r => Array.isArray(r.data) ? r.data[0] : null)
+          .catch(()=>null)
+      )
+    );
+    profiles = [...profiles, ...fallbacks.filter(Boolean)];
+  }
+
+  // Step 4: always ensure current user appears with fresh local values
+  profiles = profiles.filter(p=>p && p.id);
   const selfInList = profiles.some(p=>p.id===currentUser.id);
   if(!selfInList && profile){
-    profiles.push({
-      id:currentUser.id,
-      username:profile.username||'?',
-      momentum,
-      streak:mass,
-      volt_score:voltScore
-    });
+    profiles.push({id:currentUser.id, username:profile.username||'?', momentum, streak:mass, volt_score:voltScore});
   }
-  // Update current user's row with fresh local values
-  profiles=profiles.map(p=>p.id===currentUser.id
-    ? {...p, momentum, streak:mass, volt_score:voltScore}
-    : p
+  profiles = profiles.map(p=>
+    p.id===currentUser.id ? {...p, momentum, streak:mass, volt_score:voltScore} : p
   );
-  // Sort by momentum descending
   profiles.sort((a,b)=>(b.momentum||0)-(a.momentum||0));
 
   if(!profiles.length){
-    list.innerHTML='<div class="empty-state" style="padding:16px 0;">Share the invite code to get your clan on the board.</div>';
+    list.innerHTML='<div style="text-align:center;color:#3a5a7a;font-size:12px;padding:20px 0;">Share your invite code to bring your clan on board.</div>';
     return;
   }
 
-  // Load nudges and avatars in parallel
-  const [nudges, avatarUrls]=await Promise.all([
+  // Load nudges + avatars in parallel
+  const [nudges, avatarUrls] = await Promise.all([
     loadNudges().catch(()=>[]),
     Promise.all(profiles.map(p=>getAvatarUrl(p.id).catch(()=>null)))
   ]);
@@ -1891,13 +1931,10 @@ async function loadLeaderboard() {
 
   list.innerHTML='';
 
-  // Nudge banner — show who nudged
+  // Nudge banner — named
   if(nudges.length>0){
-    // Collect unique sender names
     const names=[...new Set(nudges.map(n=>n.from_username).filter(Boolean))];
-    const nameStr=names.length>0
-      ? names.join(' & ') + ' nudged you'
-      : 'Someone nudged you';
+    const nameStr = names.length>0 ? names.join(' & ')+' nudged you' : 'Someone nudged you';
     let nudgeBar=$('nudgeBar');
     if(!nudgeBar){
       nudgeBar=document.createElement('div');
@@ -1912,37 +1949,37 @@ async function loadLeaderboard() {
   const myWeeklyM=getWeeklyMomentum();
 
   profiles.forEach((p,i)=>{
-    const isYou=p.id===currentUser.id;
-    const displayMomentum=isYou?momentum:(p.momentum||0);
-    const displayStreak=isYou?mass:(p.streak||0);
-    const weeklyM=isYou?myWeeklyM:Math.round((p.momentum||0)*0.15*10)/10;
-    const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const isYou       = p.id===currentUser.id;
+    const dispMom     = isYou ? momentum        : (p.momentum||0);
+    const dispStreak  = isYou ? mass            : (p.streak||0);
+    const weeklyM     = isYou ? myWeeklyM       : Math.round((p.momentum||0)*0.15*10)/10;
+    const rankClass   = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const initial     = (p.username||'?')[0].toUpperCase();
 
-    const avatarUrl=avatarMap[p.id];
-    const initial=(p.username||'?')[0].toUpperCase();
-    const avatarHtml=avatarUrl
-      ?`<img src="${avatarUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--line);flex-shrink:0;" onerror="this.style.display='none'">`
-      :`<div style="width:36px;height:36px;border-radius:50%;background:var(--surface-lit);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:700;font-size:14px;color:var(--ember);flex-shrink:0;">${initial}</div>`;
+    const avatarUrl   = avatarMap[p.id];
+    const avatarHtml  = avatarUrl
+      ? `<img src="${avatarUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--line);flex-shrink:0;" onerror="this.style.display='none'">`
+      : `<div style="width:38px;height:38px;border-radius:50%;background:var(--surface-lit);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:var(--ember);flex-shrink:0;">${initial}</div>`;
 
-    const nudgeBtn=!isYou
-      ?`<button data-nudge="${p.id}" style="background:transparent;border:1px solid var(--line);color:#7aa8d8;font-family:'Space Grotesk',sans-serif;font-size:10px;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0;letter-spacing:0.05em;">Nudge</button>`
-      :'';
-
-    const row=document.createElement('div');
-    row.className='lb-row'+(isYou?' lb-you':'');
-    row.innerHTML=`<div class="lb-rank ${rankClass}">${i+1}</div>
+    const row = document.createElement('div');
+    row.className = 'lb-row'+(isYou?' lb-you':'');
+    row.innerHTML = `
+      <div class="lb-rank ${rankClass}">${i+1}</div>
       ${avatarHtml}
-      <div class="lb-username">${esc(p.username||'?')}${isYou?' <span style="font-size:10px;color:var(--ash)">(you)</span>':''}</div>
+      <div class="lb-username">
+        ${esc(p.username||'?')}
+        ${isYou?'<span style="font-size:10px;color:var(--ash);margin-left:4px;">(you)</span>':''}
+      </div>
       <div class="lb-stats">
-        <div class="lb-momentum">${fmtScore(displayMomentum)}</div>
-        <div class="lb-streak">${displayStreak} day streak</div>
+        <div class="lb-momentum">${fmtScore(dispMom)}</div>
+        <div class="lb-streak">${dispStreak} day streak</div>
         <div style="font-size:9px;color:#3a6a9a;letter-spacing:0.06em;margin-top:2px;">+${fmtScore(weeklyM)} this week</div>
       </div>
-      ${nudgeBtn}`;
-    // Wire nudge button with JS (not inline onclick) to avoid closure issues
+      ${!isYou ? `<button class="nudge-btn" data-uid="${p.id}">Nudge ⚡</button>` : ''}
+    `;
     if(!isYou){
-      row.querySelector('[data-nudge]').addEventListener('click',function(){
-        sendNudge(p.id,this);
+      row.querySelector('.nudge-btn').addEventListener('click', function(){
+        sendNudge(p.id, this);
       });
     }
     list.appendChild(row);
