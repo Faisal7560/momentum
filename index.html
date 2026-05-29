@@ -265,8 +265,16 @@
   .goals-locked-overlay {
     pointer-events:none;opacity:0.45;
   }
-  /* loading */
-  #loadingScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;}
+  /* pull-to-refresh */
+  #pullIndicator{
+    position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-60px);
+    width:40px;height:40px;background:var(--surface-lit);border:1px solid var(--line);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    z-index:8000;transition:transform 0.2s ease;pointer-events:none;
+  }
+  #pullIndicator.visible{transform:translateX(-50%) translateY(12px);}
+  #pullIndicator.spinning .pull-arrow{animation:spin 0.7s linear infinite;}
+  .pull-arrow{font-size:18px;transition:transform 0.2s ease;display:block;}
   .spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--ember);border-radius:50%;animation:spin 0.8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
 
@@ -404,6 +412,7 @@
   </div>
 </div>
 
+<div id="pullIndicator"><span class="pull-arrow">↓</span></div>
 <div id="loadingScreen"><div class="spinner"></div></div>
 <div class="glow" id="glow"></div>
 
@@ -1467,20 +1476,23 @@ async function loadGoals() {
       GOALS.push({name:'',done:false,locked:true,db_id:d&&d[0]?d[0].id:null,position:pos});
     }
   }
-  // Reset done states if new day
+  // Reset done states only if we have a stored date AND it's a different day
+  // If stored is null/missing, trust what the DB returned — don't wipe
   const stored = localStorage.getItem('today_date');
-  if (stored !== dateStr()) {
+  const today = dateStr();
+  if (stored && stored !== today) {
+    // Genuine new day — reset
     GOALS.forEach(g => g.done = false);
     velocity = 0;
     await saveGoalsDone();
-    localStorage.setItem('today_date', dateStr());
-    // Also clear day_ended if it was from a previous day
+    localStorage.setItem('today_date', today);
     const dayEnded = localStorage.getItem('day_ended');
-    if (dayEnded && dayEnded !== dateStr()) {
+    if (dayEnded && dayEnded !== today) {
       localStorage.removeItem('day_ended');
     }
   } else {
-    // Restore velocity from done goals
+    // Same day or first load — trust DB values, restore velocity
+    if (!stored) localStorage.setItem('today_date', today);
     velocity = GOALS.filter(g => g.done && g.name).length;
   }
 }
@@ -2543,6 +2555,69 @@ function finishOnboarding() {
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     if (dx < 0 && currentTabIndex < TABS.length - 1) showTab(TABS[currentTabIndex + 1]);
     if (dx > 0 && currentTabIndex > 0) showTab(TABS[currentTabIndex - 1]);
+  }, { passive: true });
+})();
+
+// ═══════════════════════════════════════
+//  PULL TO REFRESH
+// ═══════════════════════════════════════
+(function() {
+  const THRESHOLD = 80; // px of pull needed to trigger refresh
+  let startY = 0, pulling = false, triggered = false;
+  const indicator = $('pullIndicator');
+  const arrow = indicator.querySelector('.pull-arrow');
+
+  function getActiveTab() {
+    const tabs = ['tabMomentum','tabProgress','tabLeaderboard','tabProfile'];
+    return document.getElementById(tabs[currentTabIndex]);
+  }
+
+  function isAtTop() {
+    const tab = getActiveTab();
+    return tab ? tab.scrollTop <= 0 : true;
+  }
+
+  document.addEventListener('touchstart', e => {
+    if (!$('appScreen') || !$('appScreen').classList.contains('active')) return;
+    if (!isAtTop()) return;
+    startY = e.touches[0].clientY;
+    pulling = true;
+    triggered = false;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    const dx = Math.abs(e.touches[0].clientX - (e.touches[0].clientX)); // always 0, just for clarity
+    // only pull-to-refresh on downward drag from top
+    if (dy <= 0) { pulling = false; indicator.classList.remove('visible'); return; }
+    if (dy < 10) return; // ignore tiny movements
+    // show indicator, rotate arrow based on progress
+    const progress = Math.min(dy / THRESHOLD, 1);
+    indicator.classList.add('visible');
+    arrow.style.transform = `rotate(${progress * 180}deg)`;
+    arrow.style.opacity = 0.4 + progress * 0.6;
+    if (dy >= THRESHOLD && !triggered) {
+      triggered = true;
+      arrow.textContent = '↻';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    if (!pulling) return;
+    pulling = false;
+    if (triggered) {
+      // show spinning state briefly then reload
+      indicator.classList.add('spinning');
+      arrow.textContent = '↻';
+      setTimeout(() => location.reload(), 600);
+    } else {
+      // snap back
+      indicator.classList.remove('visible');
+      arrow.style.transform = '';
+      arrow.style.opacity = '';
+      arrow.textContent = '↓';
+    }
   }, { passive: true });
 })();
 
