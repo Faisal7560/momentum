@@ -50,8 +50,19 @@
   .nav-icon{font-size:18px;line-height:1;}
   /* momentum tab */
   .label{font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:#7aa8d8;text-align:center;margin-bottom:8px;}
-  .momentum{font-family:'Sora',sans-serif;font-weight:900;font-size:112px;line-height:1;text-align:center;color:var(--text);letter-spacing:-0.03em;transition:transform 0.45s cubic-bezier(.34,1.56,.64,1),color 0.5s ease;user-select:none;}
+  .momentum{font-family:'Sora',sans-serif;font-weight:900;font-size:112px;line-height:1;text-align:center;color:var(--text);letter-spacing:-0.03em;transition:transform 0.45s cubic-bezier(.34,1.56,.64,1),color 0.5s ease,text-shadow 1.4s ease;user-select:none;}
   .momentum.pulse{transform:scale(1.09);color:var(--ember-soft);}
+  /* breathing animations per state */
+  @keyframes breathe-ignition{0%,100%{text-shadow:0 0 20px rgba(96,165,250,0.25);}50%{text-shadow:0 0 40px rgba(96,165,250,0.55),0 0 80px rgba(96,165,250,0.2);}}
+  @keyframes breathe-flow{0%,100%{text-shadow:0 0 24px rgba(56,189,248,0.3);}50%{text-shadow:0 0 60px rgba(56,189,248,0.65),0 0 100px rgba(56,189,248,0.2);}}
+  @keyframes breathe-locked{0%,100%{text-shadow:0 0 28px rgba(129,140,248,0.35);}50%{text-shadow:0 0 70px rgba(129,140,248,0.75),0 0 120px rgba(129,140,248,0.25);}}
+  @keyframes breathe-relentless{0%,100%{text-shadow:0 0 32px rgba(167,139,250,0.4),0 0 8px rgba(167,139,250,0.6);}50%{text-shadow:0 0 80px rgba(167,139,250,0.85),0 0 140px rgba(167,139,250,0.3),0 0 10px rgba(255,255,255,0.4);}}
+  @keyframes breathe-collapse{0%,100%{text-shadow:0 0 20px rgba(249,115,22,0.3);}50%{text-shadow:0 0 50px rgba(249,115,22,0.6),0 0 90px rgba(249,115,22,0.2);}}
+  .momentum.state-ignition{animation:breathe-ignition 3s ease-in-out infinite;}
+  .momentum.state-flow{animation:breathe-flow 2.8s ease-in-out infinite;}
+  .momentum.state-locked{animation:breathe-locked 2.5s ease-in-out infinite;}
+  .momentum.state-relentless{animation:breathe-relentless 2s ease-in-out infinite;}
+  .momentum.state-collapse{animation:breathe-collapse 1.8s ease-in-out infinite;}
   .state{text-align:center;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;min-height:18px;transition:color 1s ease;}
   .drain-line{text-align:center;font-size:10px;color:var(--ember-soft);margin-bottom:8px;min-height:14px;opacity:0;transition:opacity 0.6s;}
   .drain-line.visible{opacity:0.85;}
@@ -94,6 +105,61 @@
   .add-cancel{background:transparent;color:var(--ash);}
   .day-btn{width:100%;background:transparent;border:1px dashed var(--line);color:#7aa8d8;font-family:'Space Grotesk',sans-serif;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;padding:13px;border-radius:12px;cursor:pointer;transition:border-color 0.2s,color 0.2s;margin-top:8px;}
   .note{font-size:9px;color:#7aa8d8;margin-top:12px;line-height:1.6;text-align:center;}
+  /* drain countdown */
+  .drain-countdown{text-align:center;font-size:10px;color:#3a6a9a;margin-bottom:6px;min-height:14px;letter-spacing:0.04em;}
+  /* sparkline chart */
+  .chart-wrap{margin-bottom:20px;}
+  .chart-label{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:#7aa8d8;margin-bottom:8px;}
+  .chart-svg{width:100%;height:64px;display:block;}
+  /* ── Day Summary Modal ── */
+  #daySummaryModal{
+    position:fixed;inset:0;background:rgba(3,5,10,0.92);z-index:12000;
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    padding:32px 28px;
+  }
+  #daySummaryModal.open{display:flex;}
+  .ds-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:24px;
+    padding:32px 28px;width:100%;max-width:380px;text-align:center;
+    animation:dsSlideUp 0.45s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes dsSlideUp{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+  .ds-icon{font-size:52px;margin-bottom:16px;line-height:1;}
+  .ds-title{font-family:'Sora',sans-serif;font-weight:900;font-size:26px;margin-bottom:6px;}
+  .ds-sub{font-size:12px;color:var(--ash);margin-bottom:28px;line-height:1.6;}
+  .ds-stats{display:flex;justify-content:space-around;margin-bottom:28px;gap:12px;}
+  .ds-stat{flex:1;background:var(--surface-lit);border:1px solid var(--line);border-radius:14px;padding:14px 8px;}
+  .ds-stat-val{font-family:'Sora',sans-serif;font-weight:900;font-size:28px;color:var(--ember);margin-bottom:4px;transition:all 0.6s ease;}
+  .ds-stat-label{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#7aa8d8;}
+  .ds-close{width:100%;background:var(--ember);color:#0c0a07;border:none;border-radius:12px;padding:15px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.08em;}
+  /* ── Return Reminder Banner ── */
+  #returnBanner{
+    display:none;background:var(--surface-lit);border:1px solid var(--ember);
+    border-radius:12px;padding:12px 16px;margin-bottom:14px;
+    align-items:center;gap:10px;
+  }
+  #returnBanner.show{display:flex;}
+  .rb-text{flex:1;font-size:11px;color:var(--ember-soft);line-height:1.55;}
+  .rb-close{background:none;border:none;color:var(--ash);cursor:pointer;font-size:18px;flex-shrink:0;padding:0;}
+  /* ── Volt Score ── */
+  .volt-score-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;gap:14px;}
+  .vs-label-wrap{flex:1;}
+  .vs-label{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#7aa8d8;}
+  .vs-sub{font-size:10px;color:#3a5a7a;margin-top:2px;}
+  .vs-val{font-family:'Sora',sans-serif;font-weight:900;font-size:32px;color:var(--ember);}
+  /* ── Weekly War ── */
+  .week-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:4px;}
+  .week-toggle{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .week-tab{padding:7px 14px;background:transparent;border:none;color:var(--ash);font-family:'Space Grotesk',sans-serif;font-size:10px;letter-spacing:0.1em;cursor:pointer;transition:background 0.2s,color 0.2s;}
+  .week-tab.active{background:var(--surface-lit);color:var(--text);}
+  .week-reset{font-size:9px;color:#3a5a7a;letter-spacing:0.06em;}
+  /* ── Clan Reactions ── */
+  .reaction-bar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .reaction-btn{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;cursor:pointer;transition:border-color 0.2s,background 0.2s;display:flex;align-items:center;gap:4px;font-family:'Space Grotesk',sans-serif;}
+  .reaction-btn:active{background:var(--surface-lit);border-color:var(--ember);}
+  .reaction-count{font-size:10px;color:var(--ash);}
+  .reaction-btn.reacted{border-color:var(--ember);background:var(--surface-lit);}
+  .reaction-btn.reacted .reaction-count{color:var(--ember-soft);}
   /* float */
   .float{position:fixed;font-family:'Sora',sans-serif;font-weight:900;pointer-events:none;z-index:999;transition:left 0.7s cubic-bezier(.5,0,.2,1),top 0.7s cubic-bezier(.5,0,.2,1),opacity 0.7s ease,transform 0.7s ease;}
   .float-gain{font-size:32px;color:var(--ember);text-shadow:0 0 18px rgba(59,130,246,0.8);}
@@ -304,7 +370,8 @@
         <strong>Complete all goals → +100 momentum</strong><br>
         Complete half → +50 momentum<br>
         Complete none → 0 momentum gained<br><br>
-        It doesn't matter if you set 3 goals or 10. A perfect day is always <strong>+100</strong>.
+        It doesn't matter if you set 3 goals or 10. A perfect day is always <strong>+100</strong>.<br><br>
+        ⚠️ <strong>Momentum drains −5 every 3 hours</strong> until you complete your goals for the day. End the day to stop the drain.
       </div>
     </div>
 
@@ -350,7 +417,8 @@
       <div class="ob-body">
         Create a clan or join one with an <strong>invite code</strong>. Compete with friends and family on a shared leaderboard.<br><br>
         Your goals stay <strong>completely private</strong>. Only your momentum score and streak are visible to your clan.<br><br>
-        Nudge clan members when they go quiet. Let them know you noticed.
+        <strong>React</strong> to clan members' scores with 🔥⚡💪👑. Nudge them when they go quiet.<br><br>
+        <strong>Weekly War</strong> resets every Monday. Chase the top spot every week — the all-time leaderboard never forgets.
       </div>
     </div>
 
@@ -360,7 +428,7 @@
       <div class="ob-body">
         Momentum isn't about being perfect.<br><br>
         <strong>One bad day doesn't break you. Two does.</strong><br><br>
-        The app is designed to make coming back easy and staying away costly. Every day you open it is a day your momentum survives.<br><br>
+        Your <strong>Volt Score</strong> is your lifetime record — every point you ever earn is added to it permanently. It never resets. Even when your momentum drops, your Volt Score stands.<br><br>
         Now go build something.
       </div>
     </div>
@@ -393,6 +461,30 @@
 
 <div id="loadingScreen"><div class="spinner"></div></div>
 <div class="glow" id="glow"></div>
+
+<!-- DAY SUMMARY MODAL -->
+<div id="daySummaryModal">
+  <div class="ds-card">
+    <div class="ds-icon" id="dsIcon">🌙</div>
+    <div class="ds-title" id="dsTitle">Day Complete</div>
+    <div class="ds-sub" id="dsSub">You showed up. That's what matters.</div>
+    <div class="ds-stats">
+      <div class="ds-stat">
+        <div class="ds-stat-val" id="dsMomentum">0</div>
+        <div class="ds-stat-label">Momentum</div>
+      </div>
+      <div class="ds-stat">
+        <div class="ds-stat-val" id="dsStreak">0</div>
+        <div class="ds-stat-label">Day Streak</div>
+      </div>
+      <div class="ds-stat">
+        <div class="ds-stat-val" id="dsGoals">0/0</div>
+        <div class="ds-stat-label">Goals Hit</div>
+      </div>
+    </div>
+    <button class="ds-close" onclick="closeDaySummary()">Keep going →</button>
+  </div>
+</div>
 
 <!-- AUTH -->
 <div class="screen" id="authScreen">
@@ -497,8 +589,19 @@
     <div style="display:flex;justify-content:center;margin-bottom:4px"><div class="momentum" id="momentum">0</div></div>
     <div class="state" id="state"></div>
     <div class="drain-line" id="drainLine"></div>
+    <div class="drain-countdown" id="drainCountdown"></div>
     <div class="streak-wrap"><div><div class="vm-num" id="massDisplay">0</div><div class="vm-tag">day streak</div></div></div>
     <div class="divider"></div>
+    <!-- Return reminder banner -->
+    <div id="returnBanner">
+      <div class="rb-text" id="returnBannerText">Welcome back. Your momentum is waiting.</div>
+      <button class="rb-close" onclick="dismissReturnBanner()">×</button>
+    </div>
+    <!-- 7-day sparkline -->
+    <div class="chart-wrap">
+      <div class="chart-label">7-day momentum</div>
+      <svg class="chart-svg" id="sparklineSvg" viewBox="0 0 340 64" preserveAspectRatio="none"></svg>
+    </div>
     <div id="todayDate" style="font-size:11px;color:var(--ash);letter-spacing:0.08em;margin-bottom:12px;"></div>
     <div class="today">Today's Push</div>
     <div class="sub">Complete each one. Every goal fuels your momentum.</div>
@@ -520,6 +623,14 @@
   <div id="tabLeaderboard" class="tab-content">
     <div class="lb-title">Clan</div>
     <div class="clan-badge" id="clanName">No clan yet</div>
+    <!-- weekly war toggle -->
+    <div class="week-header" id="weekHeader" style="display:none">
+      <div class="week-toggle">
+        <button class="week-tab active" id="weekTabAll" onclick="setLbMode('all')">All-time</button>
+        <button class="week-tab" id="weekTabWeek" onclick="setLbMode('week')">This week</button>
+      </div>
+      <div class="week-reset" id="weekResetLabel"></div>
+    </div>
     <div id="leaderboardList"></div>
     <div id="noClanMsg" class="empty-state">You're not in a clan yet.<br>Create one or join with an invite code.</div>
     <div id="clanActions">
@@ -551,6 +662,14 @@
       <div id="profileSaveBar">
         <span>You have unsaved changes</span>
         <button id="profileSaveBtn" onclick="saveProfileChanges()">Save</button>
+      </div>
+      <!-- Volt Score — lifetime total, only goes up -->
+      <div class="volt-score-box">
+        <div class="vs-label-wrap">
+          <div class="vs-label">Volt Score</div>
+          <div class="vs-sub">Lifetime momentum earned — never resets</div>
+        </div>
+        <div class="vs-val" id="voltScoreDisplay">0</div>
       </div>
       <div class="stat-box">
         <div><div class="stat-val" id="profileMomentum">0</div><div class="stat-label">Momentum</div></div>
@@ -694,10 +813,11 @@ let GOALS = [
   { name:'', done:false, locked:true, db_id:null },
   { name:'', done:false, locked:true, db_id:null },
 ];
-let momentum = 0, mass = 0, missStreak = 0, velocity = 0;
+let momentum = 0, mass = 0, missStreak = 0, velocity = 0, voltScore = 0;
 let currentClan = null;
 let editingIndex = -1;
 let authMode = 'login';
+let lbMode = 'all'; // 'all' or 'week'
 
 const $ = id => document.getElementById(id);
 
@@ -750,11 +870,13 @@ async function boot() {
   profile   = data[0];
   momentum  = profile.momentum ?? 0;
   mass      = profile.streak   ?? 0;
+  voltScore = profile.volt_score ?? 0;
 
   await loadGoals();
   await loadClan();
   applyOfflineDrain();
   showApp();
+  checkReturnReminder();
   // Check for nudges on load
   checkNudgesOnLoad();
 }
@@ -767,6 +889,11 @@ function showScreen(id) {
 
 function showApp() {
   showScreen('appScreen');
+  // Initialise periodic drain timer if not set
+  if (!localStorage.getItem('last_periodic_drain')) {
+    localStorage.setItem('last_periodic_drain', Date.now().toString());
+  }
+  saveMomentumHistory();
   render();
   buildGoals();
 }
@@ -817,9 +944,11 @@ async function saveUsername() {
   const username = $('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   if (!username || username.length < 3) { $('setupErr').textContent = 'Min 3 chars — letters, numbers, _ . - only'; return; }
   $('setupErr').textContent = '';
-  const { error } = await dbInsert('profiles', { id: currentUser.id, username, momentum:0, streak:0 });
+  const { error } = await dbInsert('profiles', { id: currentUser.id, username, momentum:10, streak:0, volt_score:10 });
   if (error) { $('setupErr').textContent = error.message || 'Username taken'; return; }
-  profile = { id: currentUser.id, username, momentum:0, streak:0 };
+  profile = { id: currentUser.id, username, momentum:10, streak:0, volt_score:10 };
+  momentum = 10;
+  voltScore = 10;
   await loadGoals();
   localStorage.setItem('ob_done', '0'); // mark as new user so onboarding shows
   showApp();
@@ -992,7 +1121,12 @@ function applyOfflineDrain() {
 function render() {
   const key = getStateKey();
   const st  = STATES[key];
-  $('momentum').textContent   = Math.round(momentum);
+  const momEl = $('momentum');
+  momEl.textContent = Math.round(momentum);
+  // breathing class
+  momEl.className = 'momentum';
+  if (key !== 'cold') momEl.classList.add('state-' + key);
+
   $('massDisplay').textContent = missStreak === 1 ? mass + '⚠' : mass;
   $('state').textContent = st.label;
   $('state').style.color = st.color;
@@ -1025,7 +1159,28 @@ function render() {
     dl.classList.add('visible');
   } else { dl.classList.remove('visible'); }
 
-  // end day button — grey out if already ended today
+  // drain countdown — time until next 3-hour periodic drain
+  const cdEl = $('drainCountdown');
+  if (cdEl && momentum > 0 && localStorage.getItem('day_ended') !== dateStr()) {
+    const last = parseInt(localStorage.getItem('last_periodic_drain') || '0');
+    if (last > 0) {
+      const nextDrainAt = last + 3 * 60 * 60 * 1000;
+      const msLeft = nextDrainAt - Date.now();
+      if (msLeft > 0) {
+        const h = Math.floor(msLeft / 3600000);
+        const m = Math.floor((msLeft % 3600000) / 60000);
+        cdEl.textContent = `−5 momentum in ${h > 0 ? h + 'h ' : ''}${m}m — complete your goals`;
+      } else {
+        cdEl.textContent = '';
+      }
+    } else {
+      cdEl.textContent = '';
+    }
+  } else if (cdEl) {
+    cdEl.textContent = '';
+  }
+
+  // end day button
   const endedToday = localStorage.getItem('day_ended') === dateStr();
   const dayBtn = $('dayBtn');
   const undoDayBtn = $('undoDayBtn');
@@ -1042,6 +1197,9 @@ function render() {
   if (goalsWrap) {
     goalsWrap.classList.toggle('goals-locked-overlay', endedToday);
   }
+
+  // sparkline
+  renderSparkline();
 }
 
 // ═══════════════════════════════════════
@@ -1061,6 +1219,159 @@ function fly(text, x, y, type) {
     f.style.opacity='0'; f.style.transform='scale(0.4)';
   }, 260);
   setTimeout(() => f.remove(), 1100);
+}
+
+// ═══════════════════════════════════════
+//  MOMENTUM HISTORY (sparkline data)
+// ═══════════════════════════════════════
+function getMomentumHistory() {
+  try { return JSON.parse(localStorage.getItem('momentum_history') || '[]'); } catch { return []; }
+}
+
+function saveMomentumHistory() {
+  let history = getMomentumHistory();
+  const today = dateStr();
+  // Update or insert today's entry
+  const idx = history.findIndex(e => e.d === today);
+  if (idx >= 0) history[idx].m = Math.round(momentum);
+  else history.push({ d: today, m: Math.round(momentum) });
+  // Keep only last 30 days
+  history = history.slice(-30);
+  localStorage.setItem('momentum_history', JSON.stringify(history));
+}
+
+function renderSparkline() {
+  const svg = $('sparklineSvg');
+  if (!svg) return;
+  const history = getMomentumHistory();
+  // Build 7-day window (today + 6 days before)
+  const W = 7;
+  const entries = [];
+  for (let i = W - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = dateStr(d);
+    const found = history.find(e => e.d === ds);
+    entries.push({ d: ds, m: found ? found.m : null });
+  }
+  // Ensure today's current momentum is shown
+  entries[W - 1].m = Math.round(momentum);
+
+  const vals = entries.map(e => e.m ?? 0);
+  const maxVal = Math.max(...vals, 1);
+  const W_SVG = 340, H_SVG = 64, PAD = 8;
+  const xStep = (W_SVG - PAD * 2) / (W - 1);
+
+  svg.innerHTML = '';
+
+  // Grid lines
+  [0.25, 0.5, 0.75, 1].forEach(pct => {
+    const y = H_SVG - PAD - (H_SVG - PAD * 2) * pct;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', PAD); line.setAttribute('x2', W_SVG - PAD);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#111827'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  });
+
+  // Build points only for non-null entries
+  const points = entries.map((e, i) => ({
+    x: PAD + i * xStep,
+    y: H_SVG - PAD - ((e.m ?? 0) / maxVal) * (H_SVG - PAD * 2),
+    hasData: e.m !== null,
+    m: e.m
+  }));
+
+  // Area fill
+  const areaPoints = points.map(p => `${p.x},${p.y}`).join(' ');
+  const area = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  area.setAttribute('points', `${PAD},${H_SVG - PAD} ${areaPoints} ${W_SVG - PAD},${H_SVG - PAD}`);
+  area.setAttribute('fill', 'rgba(59,130,246,0.08)');
+  area.setAttribute('stroke', 'none');
+  svg.appendChild(area);
+
+  // Line
+  const line = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  line.setAttribute('points', areaPoints);
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', '#3b82f6');
+  line.setAttribute('stroke-width', '2');
+  line.setAttribute('stroke-linecap', 'round');
+  line.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(line);
+
+  // Day labels + dots
+  const dayLetters = ['S','M','T','W','T','F','S'];
+  points.forEach((p, i) => {
+    // dot
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y); circle.setAttribute('r', i === W-1 ? 4 : 2.5);
+    circle.setAttribute('fill', i === W-1 ? '#60a5fa' : '#3b82f6');
+    svg.appendChild(circle);
+    // day label
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    const d = new Date(); d.setDate(d.getDate() - (W - 1 - i));
+    label.setAttribute('x', p.x); label.setAttribute('y', H_SVG - 1);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-size', '8');
+    label.setAttribute('fill', i === W-1 ? '#60a5fa' : '#3a5a7a');
+    label.setAttribute('font-family', 'Space Grotesk, sans-serif');
+    label.textContent = dayLetters[d.getDay()];
+    svg.appendChild(label);
+    // value label on today's dot
+    if (i === W-1 && p.m !== null) {
+      const valLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+      valLabel.setAttribute('x', p.x); valLabel.setAttribute('y', p.y - 7);
+      valLabel.setAttribute('text-anchor', 'middle');
+      valLabel.setAttribute('font-size', '8'); valLabel.setAttribute('fill', '#60a5fa');
+      valLabel.setAttribute('font-family', 'Sora, sans-serif'); valLabel.setAttribute('font-weight', '700');
+      valLabel.textContent = p.m;
+      svg.appendChild(valLabel);
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+//  RETURN REMINDER
+// ═══════════════════════════════════════
+const LAST_VISIT_KEY = 'last_visit_ts';
+
+function updateLastVisit() {
+  localStorage.setItem(LAST_VISIT_KEY, Date.now().toString());
+}
+
+function checkReturnReminder() {
+  const last = parseInt(localStorage.getItem(LAST_VISIT_KEY) || '0');
+  const banner = $('returnBanner');
+  if (!banner) return;
+  // Only show if gone 20+ hours AND day hasn't been ended yet
+  const hoursAway = (Date.now() - last) / 3600000;
+  const endedToday = localStorage.getItem('day_ended') === dateStr();
+  if (last > 0 && hoursAway >= 20 && !endedToday) {
+    const hoursRound = Math.floor(hoursAway);
+    const txt = $('returnBannerText');
+    if (txt) {
+      if (momentum > 0) {
+        txt.textContent = `You were away ${hoursRound}h. Your momentum is at ${Math.round(momentum)} — let's keep it moving.`;
+      } else {
+        txt.textContent = `Welcome back after ${hoursRound} hours. Time to rebuild.`;
+      }
+    }
+    banner.classList.add('show');
+  }
+  updateLastVisit();
+}
+
+function dismissReturnBanner() {
+  const banner = $('returnBanner');
+  if (banner) banner.classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+//  VOLT SCORE HELPERS
+// ═══════════════════════════════════════
+function addToVoltScore(amount) {
+  if (amount <= 0) return;
+  voltScore += amount;
 }
 
 // ═══════════════════════════════════════
@@ -1110,7 +1421,7 @@ async function saveGoalsDone() {
 
 async function saveProfile() {
   if (!currentUser) return;
-  await dbUpdate('profiles',`id=eq.${currentUser.id}`,{momentum,streak:mass,updated_at:new Date().toISOString()});
+  await dbUpdate('profiles',`id=eq.${currentUser.id}`,{momentum,streak:mass,volt_score:voltScore,updated_at:new Date().toISOString()});
 }
 
 // ═══════════════════════════════════════
@@ -1188,12 +1499,15 @@ async function toggleGoal(i, el) {
   if(localStorage.getItem('day_ended')===dateStr())return; // day ended — locked
   const prev=calcGain(); goal.done=true; missStreak=0;
   const gain=calcGain();
+  const delta=Math.round((gain-prev)*10)/10;
   momentum=Math.max(0,Math.round((momentum-prev+gain)*10)/10);
+  if(delta>0)addToVoltScore(delta); // Volt Score only goes up
+  if(delta>0)addWeeklyMomentum(delta); // Weekly war tracking
   velocity++;
   const gr=el.getBoundingClientRect();
-  const delta=Math.round((gain-prev)*10)/10;
   if(delta>0)fly('+'+delta,gr.right-60,gr.top+gr.height/2-13,'gain');
   buildGoals();render();
+  saveMomentumHistory();
   if(goal.db_id)await dbUpdate('goals',`id=eq.${goal.db_id}`,{done:true});
   await saveProfile();
   const m=$('momentum');
@@ -1236,6 +1550,47 @@ async function addGoal(name) {
   buildGoals();render();
 }
 
+// ═══════════════════════════════════════
+//  DAY SUMMARY MODAL
+// ═══════════════════════════════════════
+function showDaySummary(goalsHit, goalsTotal, newMomentum, newStreak, success) {
+  const modal = $('daySummaryModal');
+  if (!modal) return;
+  $('dsIcon').textContent = success ? (goalsHit === goalsTotal ? '🔥' : '✅') : '😴';
+  $('dsTitle').textContent = success ? (goalsHit === goalsTotal ? 'Perfect Day' : 'Day Complete') : 'Rest Day';
+  $('dsSub').textContent = success
+    ? (goalsHit === goalsTotal ? 'Every goal done. You built something real today.' : `${goalsHit} of ${goalsTotal} goals done. Progress is progress.`)
+    : 'Recovery mode active — come back tomorrow and protect your streak.';
+  // Animate counters
+  const momEl = $('dsMomentum');
+  const strEl = $('dsStreak');
+  const glsEl = $('dsGoals');
+  momEl.textContent = '0'; strEl.textContent = '0'; glsEl.textContent = `0/${goalsTotal}`;
+  modal.classList.add('open');
+  // Animate numbers after brief delay
+  setTimeout(() => {
+    animateCounter(momEl, 0, Math.round(newMomentum), 700);
+    animateCounter(strEl, 0, newStreak, 500);
+    setTimeout(() => { glsEl.textContent = `${goalsHit}/${goalsTotal}`; }, 300);
+  }, 200);
+}
+
+function animateCounter(el, from, to, duration) {
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + (to - from) * eased);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function closeDaySummary() {
+  const modal = $('daySummaryModal');
+  if (modal) modal.classList.remove('open');
+}
+
 async function endDay() {
   // Block if already ended today
   if (localStorage.getItem('day_ended') === dateStr()) {
@@ -1250,6 +1605,8 @@ async function endDay() {
     return;
   }
   const did = GOALS.filter(g=>g.done && g.name).length > 0;
+  const goalsHitCount = GOALS.filter(g=>g.done && g.name).length;
+  const goalsTotalCount = GOALS.filter(g=>g.name).length;
   // Save state for undo
   localStorage.setItem('day_ended_had_goals', did ? 'true' : 'false');
   localStorage.setItem('day_ended_prev_miss', missStreak.toString());
@@ -1281,7 +1638,10 @@ async function endDay() {
   GOALS.forEach(g => g.done = false);
   localStorage.setItem('today_date', dateStr());
   localStorage.setItem('day_ended', dateStr());
+  saveMomentumHistory();
   buildGoals(); render();
+  // Show day summary modal
+  showDaySummary(goalsHitCount, goalsTotalCount, momentum, mass, did);
   await saveGoalsDone();
   await saveProfile();
 }
@@ -1353,20 +1713,109 @@ async function markNudgesSeen() {
   await dbUpdate('nudges', `to_user_id=eq.${currentUser.id}&seen=eq.false`, {seen: true});
 }
 
+// ═══════════════════════════════════════
+//  WEEKLY WAR
+// ═══════════════════════════════════════
+function setLbMode(mode) {
+  lbMode = mode;
+  $('weekTabAll').classList.toggle('active', mode === 'all');
+  $('weekTabWeek').classList.toggle('active', mode === 'week');
+  loadLeaderboard();
+}
+
+function getMondayStr() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun,1=Mon,...
+  const diff = (day === 0 ? -6 : 1 - day);
+  const monday = new Date(now); monday.setDate(now.getDate() + diff);
+  return monday.toISOString().slice(0,10);
+}
+
+function getNextMondayLabel() {
+  const monday = new Date(getMondayStr());
+  const nextMonday = new Date(monday); nextMonday.setDate(monday.getDate() + 7);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `Resets ${nextMonday.getDate()} ${months[nextMonday.getMonth()]}`;
+}
+
+// Weekly momentum: stored as { monday_date: weeklyMomentum }
+function getWeeklyMomentum() {
+  try {
+    const key = 'weekly_momentum_' + getMondayStr();
+    return parseInt(localStorage.getItem(key) || '0');
+  } catch { return 0; }
+}
+
+function addWeeklyMomentum(amount) {
+  if (amount <= 0) return;
+  const key = 'weekly_momentum_' + getMondayStr();
+  const cur = parseInt(localStorage.getItem(key) || '0');
+  localStorage.setItem(key, (cur + amount).toString());
+}
+
+// Reactions: stored in localStorage as { userId_emoji: count, userId_emoji_me: bool }
+function getReactions(profileId) {
+  const EMOJIS = ['🔥','⚡','💪','👑'];
+  return EMOJIS.map(emoji => {
+    const key = `reaction_${profileId}_${emoji}`;
+    const meKey = `reaction_${profileId}_${emoji}_me`;
+    return {
+      emoji,
+      count: parseInt(localStorage.getItem(key) || '0'),
+      reacted: localStorage.getItem(meKey) === '1'
+    };
+  });
+}
+
+function toggleReaction(profileId, emoji) {
+  const key = `reaction_${profileId}_${emoji}`;
+  const meKey = `reaction_${profileId}_${emoji}_me`;
+  const cur = parseInt(localStorage.getItem(key) || '0');
+  const reacted = localStorage.getItem(meKey) === '1';
+  if (reacted) {
+    localStorage.setItem(key, Math.max(0, cur - 1).toString());
+    localStorage.removeItem(meKey);
+  } else {
+    localStorage.setItem(key, (cur + 1).toString());
+    localStorage.setItem(meKey, '1');
+  }
+  // Re-render just the reactions for this row
+  const bar = document.querySelector(`[data-reaction-bar="${profileId}"]`);
+  if (bar) renderReactionBar(bar, profileId);
+}
+
+function renderReactionBar(bar, profileId) {
+  const reactions = getReactions(profileId);
+  bar.innerHTML = '';
+  reactions.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'reaction-btn' + (r.reacted ? ' reacted' : '');
+    btn.innerHTML = `${r.emoji}${r.count > 0 ? `<span class="reaction-count">${r.count}</span>` : ''}`;
+    btn.addEventListener('click', e => { e.stopPropagation(); toggleReaction(profileId, r.emoji); });
+    bar.appendChild(btn);
+  });
+}
+
 async function loadLeaderboard() {
   await loadClan();
   const noClan=$('noClanMsg'),clanAct=$('clanActions'),clanMgmt=$('clanMgmt');
   if(!currentClan){
+    $('weekHeader').style.display='none';
     noClan.style.display='block';clanAct.style.display='block';clanMgmt.style.display='none';
     $('clanName').textContent='No clan yet';$('leaderboardList').innerHTML='';return;
   }
   noClan.style.display='none';clanAct.style.display='none';clanMgmt.style.display='block';
   $('clanName').textContent=currentClan.name;
   $('inviteCodeDisplay').textContent=currentClan.invite_code;
+  // Show weekly war header
+  $('weekHeader').style.display='flex';
+  const resetLabel = $('weekResetLabel');
+  if (resetLabel) resetLabel.textContent = getNextMondayLabel();
+
   const {data:members}=await dbSelect('clan_members',`clan_id=eq.${currentClan.id}`,'user_id');
   if(!members)return;
   const ids=members.map(m=>m.user_id).join(',');
-  const {data:profiles}=await dbSelect('profiles',`id=in.(${ids})&order=momentum.desc`,'id,username,momentum,streak');
+  const {data:profiles}=await dbSelect('profiles',`id=in.(${ids})&order=momentum.desc`,'id,username,momentum,streak,volt_score');
   if(!profiles)return;
 
   // load unseen nudges for current user
@@ -1375,11 +1824,20 @@ async function loadLeaderboard() {
   // Load all avatars in parallel first — then update DOM all at once to avoid flash
   const avatarUrls = await Promise.all(profiles.map(p => getAvatarUrl(p.id)));
 
+  // For weekly mode, sort by weekly momentum (stored locally — approximated by same momentum for others)
+  let sortedProfiles = [...profiles];
+  if (lbMode === 'week') {
+    // For current user, use their actual weekly momentum from localStorage
+    sortedProfiles = sortedProfiles.map(p => ({
+      ...p,
+      weeklyM: p.id === currentUser.id ? getWeeklyMomentum() : Math.round(p.momentum * 0.3) // rough estimate for others
+    })).sort((a,b) => b.weeklyM - a.weeklyM);
+  }
+
   // Only now clear and rebuild list (prevents flash/vanish)
   const list=$('leaderboardList');list.innerHTML='';
 
   if (nudges.length > 0) {
-    // show nudge notification at top
     const nudgeNames = 'Someone';
     let nudgeBar = $('nudgeBar');
     if (!nudgeBar) {
@@ -1392,24 +1850,38 @@ async function loadLeaderboard() {
     await markNudgesSeen();
   }
 
-  profiles.forEach((p,i)=>{
+  // Re-map avatarUrls to sorted order
+  const avatarMap = {};
+  profiles.forEach((p, i) => { avatarMap[p.id] = avatarUrls[i]; });
+
+  sortedProfiles.forEach((p,i)=>{
     const isYou=p.id===currentUser.id;
     const row=document.createElement('div');
     row.className='lb-row'+(isYou?' lb-you':'');
+    row.style.flexDirection='column';row.style.alignItems='stretch';row.style.gap='0';
     const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
     const nudgeBtn = !isYou
       ? `<button data-nudge="${p.id}" onclick="sendNudge('${p.id}')" style="background:transparent;border:1px solid var(--line);color:#7aa8d8;font-family:'Space Grotesk',sans-serif;font-size:10px;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0;letter-spacing:0.05em;">Nudge</button>`
       : '';
-    const avatarUrl = avatarUrls[i];
+    const avatarUrl = avatarMap[p.id];
     const avatarHtml = avatarUrl
       ? `<img src="${avatarUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--line);flex-shrink:0;">`
       : `<div style="width:36px;height:36px;border-radius:50%;background:var(--surface-lit);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:700;font-size:14px;color:var(--ember);flex-shrink:0;">${(p.username||'?')[0].toUpperCase()}</div>`;
-    row.innerHTML=`<div class="lb-rank ${rankClass}">${i+1}</div>
-      ${avatarHtml}
-      <div class="lb-username">${esc(p.username)}${isYou?' <span style="font-size:10px;color:var(--ash)">(you)</span>':''}</div>
-      <div class="lb-stats"><div class="lb-momentum">${Math.round(p.momentum*10)/10}</div><div class="lb-streak">${p.streak} day streak</div></div>
-      ${nudgeBtn}`;
+    const displayScore = lbMode === 'week' ? (p.weeklyM ?? 0) : Math.round(p.momentum*10)/10;
+    const scoreLabel = lbMode === 'week' ? 'this week' : `${p.streak} day streak`;
+    row.innerHTML=`
+      <div style="display:flex;align-items:center;gap:14px;width:100%">
+        <div class="lb-rank ${rankClass}">${i+1}</div>
+        ${avatarHtml}
+        <div class="lb-username">${esc(p.username)}${isYou?' <span style="font-size:10px;color:var(--ash)">(you)</span>':''}</div>
+        <div class="lb-stats"><div class="lb-momentum">${displayScore}</div><div class="lb-streak">${scoreLabel}</div></div>
+        ${nudgeBtn}
+      </div>
+      <div class="reaction-bar" data-reaction-bar="${p.id}" style="padding-left:42px;margin-top:6px;"></div>`;
     list.appendChild(row);
+    // Render reactions
+    const reactionBar = row.querySelector(`[data-reaction-bar="${p.id}"]`);
+    if (reactionBar) renderReactionBar(reactionBar, p.id);
   });
 }
 
@@ -1695,11 +2167,14 @@ async function saveProfileChanges() {
 function loadProfile() {
   if(!profile)return;
   clearProfileDirty();
-  loadProfileAvatar(); // handles both image and initial fallback
+  loadProfileAvatar();
   $('profileUsername').textContent=profile.username;
   $('profileEmail').textContent=currentUser?.email??'';
   $('profileMomentum').textContent=Math.round(momentum*10)/10;
   $('profileStreak').textContent=mass;
+  // Volt Score
+  const vsEl = $('voltScoreDisplay');
+  if (vsEl) vsEl.textContent = Math.round(voltScore);
   // Show when they can next change username
   const lastChange = localStorage.getItem('username_changed');
   const btn = $('changeUsernameBtn');
@@ -1801,18 +2276,22 @@ $('undoDayBtn').addEventListener('click',undoEndDay);
 
   function checkPeriodicDrain() {
     if (!currentUser || !profile) return;
+    // Initialise drain timestamp on first use
+    if (!localStorage.getItem(LAST_DRAIN_KEY)) {
+      localStorage.setItem(LAST_DRAIN_KEY, Date.now().toString());
+    }
     // Don't drain if day already ended
     if (localStorage.getItem('day_ended') === dateStr()) return;
     const last = parseInt(localStorage.getItem(LAST_DRAIN_KEY) || '0');
     const now = Date.now();
     const elapsed = now - last;
     if (elapsed >= THREE_HOURS_MS) {
-      // How many 3-hour chunks have passed?
       const chunks = Math.floor(elapsed / THREE_HOURS_MS);
       const totalDrain = chunks * DRAIN_AMOUNT;
       if (momentum > 0) {
         momentum = Math.max(0, Math.round((momentum - totalDrain) * 10) / 10);
         render();
+        saveMomentumHistory();
         saveProfile();
       }
       localStorage.setItem(LAST_DRAIN_KEY, (last + chunks * THREE_HOURS_MS).toString());
@@ -1821,8 +2300,9 @@ $('undoDayBtn').addEventListener('click',undoEndDay);
 
   // Run on load (after boot sets currentUser/profile)
   setTimeout(checkPeriodicDrain, 1500);
-  // Check every 5 minutes while app is open
+  // Check every 5 minutes for drains, but update countdown every 60s
   setInterval(checkPeriodicDrain, 5 * 60 * 1000);
+  setInterval(() => { if ($('drainCountdown')) render(); }, 60 * 1000);
 })();
 $('avatarUpload').addEventListener('change', e => {
   const file = e.target.files[0];
