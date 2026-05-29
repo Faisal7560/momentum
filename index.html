@@ -52,6 +52,8 @@
   .label{font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:#7aa8d8;text-align:center;margin-bottom:8px;}
   .momentum{font-family:'Sora',sans-serif;font-weight:900;font-size:112px;line-height:1;text-align:center;color:var(--text);letter-spacing:-0.03em;transition:transform 0.45s cubic-bezier(.34,1.56,.64,1),color 0.5s ease,text-shadow 1.4s ease;user-select:none;}
   .momentum.pulse{transform:scale(1.09);color:var(--ember-soft);}
+  /* Volt Score hero — stable, not pulsing — feels permanent */
+  #voltScoreHero{font-size:72px;text-shadow:0 0 30px rgba(96,165,250,0.2);}
   /* breathing animations per state */
   @keyframes breathe-ignition{0%,100%{text-shadow:0 0 20px rgba(96,165,250,0.25);}50%{text-shadow:0 0 40px rgba(96,165,250,0.55),0 0 80px rgba(96,165,250,0.2);}}
   @keyframes breathe-flow{0%,100%{text-shadow:0 0 24px rgba(56,189,248,0.3);}50%{text-shadow:0 0 60px rgba(56,189,248,0.65),0 0 100px rgba(56,189,248,0.2);}}
@@ -352,80 +354,31 @@
       <div class="ob-icon">⚡</div>
       <div class="ob-title">Welcome to Volt</div>
       <div class="ob-body">
-        Volt is built on one idea: <strong>consistency compounds.</strong><br><br>
-        Every day you show up, your score grows. Every day you don't, it decays. The longer you stay away, the faster it drops.<br><br>
-        This isn't a habit tracker. It's a physics simulation of your discipline.
+        Volt tracks one thing: <strong>how consistent you actually are.</strong><br><br>
+        Every day you complete your goals, your <strong>Momentum</strong> grows. Your <strong>Volt Score</strong> — your lifetime total — only ever goes up. It never resets.<br><br>
+        Show up. Build something that lasts.
       </div>
     </div>
 
     <div class="ob-slide" id="ob1">
       <div class="ob-icon">🎯</div>
-      <div class="ob-title">How your score is calculated</div>
+      <div class="ob-title">How it works</div>
       <div class="ob-body">
-        Set at least <strong>3 goals</strong> each day. Your momentum gain is based on the ratio of goals you complete.<br><br>
-        <strong>Complete all goals → +100 momentum</strong><br>
-        Complete half → +50 momentum<br>
-        Complete none → 0 momentum gained<br><br>
-        It doesn't matter if you set 3 goals or 10. A perfect day is always <strong>+100</strong>.<br><br>
-        ⚠️ <strong>Momentum drains −5 every 3 hours</strong> until you complete your goals for the day. End the day to stop the drain.
+        Set <strong>3 goals</strong> each day. Complete them to gain momentum.<br><br>
+        <strong>All goals done → +100 momentum</strong><br>
+        Half done → +50 momentum<br>
+        None done → +0 momentum<br><br>
+        Every point you earn also adds permanently to your <strong>Volt Score</strong>. That number is yours forever — even on bad days, your lifetime progress stands.
       </div>
     </div>
 
     <div class="ob-slide" id="ob2">
-      <div class="ob-icon">🔥</div>
-      <div class="ob-title">Your streak</div>
+      <div class="ob-icon">🛡️</div>
+      <div class="ob-title">Miss a day</div>
       <div class="ob-body">
-        Your <strong>day streak</strong> counts how many days in a row you've shown up and completed at least one goal.<br><br>
-        End the day with goals completed → streak grows by 1.<br><br>
-        Miss a day → see what happens on the next slide.
-      </div>
-    </div>
-
-    <div class="ob-slide" id="ob3">
-      <div class="ob-icon">⚠️</div>
-      <div class="ob-title">Miss a day — Recovery Mode</div>
-      <div class="ob-body">
-        Miss <strong>one day</strong> and you enter Recovery Mode.<br><br>
-        Your streak is <strong>frozen</strong> — it won't grow, but it won't reset either. Your momentum is safe.<br><br>
-        You have <strong>one day</strong> to come back and complete your goals. Do that and everything continues as normal.
-      </div>
-    </div>
-
-    <div class="ob-slide" id="ob4">
-      <div class="ob-icon">📉</div>
-      <div class="ob-title">Miss two days — it gets costly</div>
-      <div class="ob-body">
-        Miss a second day in a row and Recovery Mode expires. Your streak resets to 0 and momentum starts draining:
-        <div class="drain-table">
-          <div>Day 2 missed: <span>−10</span></div>
-          <div>Day 3 missed: <span>−20</span></div>
-          <div>Day 4 missed: <span>−35</span></div>
-          <div>Day 5 missed: <span>−55</span></div>
-          <div>Day 6 missed: <span>−80</span></div>
-        </div><br>
-        The damage <strong>compounds</strong>. Coming back after a week is much harder than coming back after two days.
-      </div>
-    </div>
-
-    <div class="ob-slide" id="ob5">
-      <div class="ob-icon">🏆</div>
-      <div class="ob-title">Clans &amp; leaderboard</div>
-      <div class="ob-body">
-        Create a clan or join one with an <strong>invite code</strong>. Compete with friends and family on a shared leaderboard.<br><br>
-        Your goals stay <strong>completely private</strong>. Only your momentum score and streak are visible to your clan.<br><br>
-        <strong>React</strong> to clan members' scores with 🔥⚡💪👑. Nudge them when they go quiet.<br><br>
-        <strong>Weekly War</strong> resets every Monday. Chase the top spot every week — the all-time leaderboard never forgets.
-      </div>
-    </div>
-
-    <div class="ob-slide" id="ob6">
-      <div class="ob-icon">💡</div>
-      <div class="ob-title">One last thing</div>
-      <div class="ob-body">
-        Momentum isn't about being perfect.<br><br>
-        <strong>One bad day doesn't break you. Two does.</strong><br><br>
-        Your <strong>Volt Score</strong> is your lifetime record — every point you ever earn is added to it permanently. It never resets. Even when your momentum drops, your Volt Score stands.<br><br>
-        Now go build something.
+        Miss a day and you get a <strong>recovery window</strong> — your streak is frozen, not broken. Come back the next day and complete your goals, and everything continues as normal.<br><br>
+        Miss the recovery day too and your <strong>streak resets to 0</strong>. Your momentum takes a hit, but your <strong>Volt Score is untouched</strong>.<br><br>
+        Every comeback counts. Start again.
       </div>
     </div>
 
@@ -582,8 +535,18 @@
       </svg>
       <span style="font-family:'Sora',sans-serif;font-weight:900;font-size:16px;color:#e8f4ff;letter-spacing:-0.01em">Volt</span>
     </div>
-    <div class="label">Your momentum</div>
-    <div style="display:flex;justify-content:center;margin-bottom:4px"><div class="momentum" id="momentum">0</div></div>
+    <div class="label" style="margin-bottom:6px;">Today's scores</div>
+    <!-- Dual hero metrics: Momentum + Volt Score side by side -->
+    <div style="display:flex;justify-content:center;gap:0;margin-bottom:2px;">
+      <div style="flex:1;text-align:center;padding-right:12px;border-right:1px solid var(--line);">
+        <div style="font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:#7aa8d8;margin-bottom:4px;">Momentum</div>
+        <div class="momentum" id="momentum">0</div>
+      </div>
+      <div style="flex:1;text-align:center;padding-left:12px;">
+        <div style="font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:#7aa8d8;margin-bottom:4px;">Volt Score</div>
+        <div class="momentum" id="voltScoreHero" style="color:var(--ember-soft);">0</div>
+      </div>
+    </div>
     <div class="state" id="state"></div>
     <div class="drain-line" id="drainLine"></div>
     <div class="drain-countdown" id="drainCountdown"></div>
@@ -846,12 +809,12 @@ const $ = id => document.getElementById(id);
 //  STATES
 // ═══════════════════════════════════════
 const STATES = {
-  cold:      { label:'Cold Start', color:'#6a9abf', glowOp:0.06, glow:'#1e3a5f' },
-  ignition:  { label:'Ignition',   color:'#60a5fa', glowOp:0.14, glow:'#3b82f6' },
-  flow:      { label:'Flow State', color:'#38bdf8', glowOp:0.22, glow:'#0ea5e9' },
-  locked:    { label:'Locked In',  color:'#818cf8', glowOp:0.30, glow:'#6366f1' },
-  relentless:{ label:'Relentless', color:'#a78bfa', glowOp:0.40, glow:'#8b5cf6' },
-  collapse:  { label:'Collapse',   color:'#f97316', glowOp:0.12, glow:'#ea580c' },
+  cold:      { label:'Getting Started', color:'#6a9abf', glowOp:0.06, glow:'#1e3a5f' },
+  ignition:  { label:'Building Steam',  color:'#60a5fa', glowOp:0.14, glow:'#3b82f6' },
+  flow:      { label:'In The Zone',     color:'#38bdf8', glowOp:0.22, glow:'#0ea5e9' },
+  locked:    { label:'On Fire',         color:'#818cf8', glowOp:0.30, glow:'#6366f1' },
+  relentless:{ label:'Unstoppable',     color:'#a78bfa', glowOp:0.40, glow:'#8b5cf6' },
+  collapse:  { label:'Recovery Mode',   color:'#f97316', glowOp:0.12, glow:'#ea580c' },
 };
 function getStateKey() {
   if (missStreak > 0) return 'collapse';
@@ -1117,18 +1080,19 @@ function applyOfflineDrain() {
   if (!stored || stored === dateStr()) return;
   const days = Math.round((new Date(dateStr()) - new Date(stored)) / 86400000);
   if (days <= 0) return;
-  // Check if goals were completed on the stored day
   const goalsCompletedThatDay = GOALS.some(g => g.done && g.name);
   for (let d = 0; d < days; d++) {
     if (d === 0 && goalsCompletedThatDay) {
-      // Goals were done on last recorded day — count it as completed
+      // Goals were done on last recorded day — count as completed
       mass++;
       missStreak = 0;
     } else {
       missStreak++;
       if (missStreak >= 2) {
-        momentum = Math.max(0, momentum - calcDrain(missStreak));
+        // Recovery window missed — flat -10 hit and streak resets
+        momentum = Math.max(0, Math.round((momentum - 10) * 10) / 10);
         mass = 0;
+        missStreak = 0; // reset so each subsequent day only costs -10 once per cycle
       }
     }
   }
@@ -1144,6 +1108,9 @@ function render() {
   const st  = STATES[key];
   const momEl = $('momentum');
   momEl.textContent = (Math.round(momentum*10)/10).toFixed(1);
+  // Update Volt Score hero on Today tab
+  const vsHero = $('voltScoreHero');
+  if (vsHero) vsHero.textContent = (Math.round(voltScore*10)/10).toFixed(1);
   // breathing class
   momEl.className = 'momentum';
   if (key !== 'cold') momEl.classList.add('state-' + key);
@@ -1166,16 +1133,15 @@ function render() {
   if (momentum <= 0) {
     dl.classList.remove('visible');
   } else if (missStreak === 1) {
-    dl.textContent = 'Recovery mode — complete your goals today to protect your streak';
+    dl.textContent = 'Recovery window open — complete your goals today to keep your streak';
     dl.style.color = '#f97316';
     dl.classList.add('visible');
   } else if (missStreak >= 2) {
-    const nextDrain = calcDrain(missStreak + 1) - calcDrain(missStreak);
-    dl.textContent = `momentum draining — missing another day costs ${nextDrain} pts`;
+    dl.textContent = 'recovery window missed — streak resets and −10 momentum';
     dl.style.color = '#ef4444';
     dl.classList.add('visible');
   } else if (velocity === 0 && momentum > 0) {
-    dl.textContent = 'complete a goal to protect your momentum';
+    dl.textContent = 'tick off a goal to start building today';
     dl.style.color = '#60a5fa';
     dl.classList.add('visible');
   } else { dl.classList.remove('visible'); }
@@ -1657,7 +1623,7 @@ function showDaySummary(goalsHit, goalsTotal, newMomentum, newStreak, success) {
   $('dsTitle').textContent = success ? (goalsHit === goalsTotal ? 'Perfect Day' : 'Day Complete') : 'Rest Day';
   $('dsSub').textContent = success
     ? (goalsHit === goalsTotal ? 'Every goal done. You built something real today.' : `${goalsHit} of ${goalsTotal} goals done. Progress is progress.`)
-    : 'Recovery mode active — come back tomorrow and protect your streak.';
+    : 'Recovery window is open — come back tomorrow and your streak survives.';
   // Animate counters
   const momEl = $('dsMomentum');
   const strEl = $('dsStreak');
@@ -1718,18 +1684,14 @@ async function endDay() {
   } else {
     missStreak++;
     if (missStreak === 1) {
-      // first miss — recovery mode, no drain, streak frozen
-      // mass stays the same (frozen, not incremented)
+      // first miss — recovery window open, streak frozen, momentum safe
     } else {
-      // recovery window expired — drain kicks in, streak resets
-      const drain = calcDrain(missStreak);
-      const prev = momentum;
-      momentum = Math.max(0, Math.round((momentum - drain) * 10) / 10);
+      // recovery window missed — streak resets, flat -10 momentum hit
+      momentum = Math.max(0, Math.round((momentum - 10) * 10) / 10);
       mass = 0;
-      if (prev > momentum) {
-        const mr = $('momentum').getBoundingClientRect();
-        fly('-' + drain, mr.left + mr.width / 2, mr.top + 10, 'drain');
-      }
+      missStreak = 0; // reset miss counter so the cycle can start fresh
+      const mr = $('momentum').getBoundingClientRect();
+      fly('-10', mr.left + mr.width / 2, mr.top + 10, 'drain');
     }
   }
   velocity = 0;
@@ -2430,7 +2392,7 @@ async function checkNudgesOnLoad() {
 // ═══════════════════════════════════════
 //  ONBOARDING
 // ═══════════════════════════════════════
-const OB_TOTAL = 7;
+const OB_TOTAL = 3;
 let obCurrent = 0;
 
 function initOnboarding() {
